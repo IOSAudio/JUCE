@@ -118,6 +118,9 @@ static void createPluginDescription (PluginDescription& description,
     description.numInputChannels    = numInputs;
     description.numOutputChannels   = numOutputs;
     description.uid                 = getHashForTUID (info.cid);
+    // CAD Change START
+    memcpy(description.tuid, info.cid, 16);
+    // CAD Change END
 
     if (infoW != nullptr)      fillDescriptionWith (description, *infoW);
     else if (info2 != nullptr) fillDescriptionWith (description, *info2);

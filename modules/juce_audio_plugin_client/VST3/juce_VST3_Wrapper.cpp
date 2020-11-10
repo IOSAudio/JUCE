@@ -3319,58 +3319,137 @@ private:
 
 using namespace juce;
 
+// CAD Change START
+
+extern char pgCommsMem[1024+8];
+extern int  *pgChildID;
+extern int  *pgCategory;
+extern char *sgOrigVst;
+
 //==============================================================================
 // The VST3 plugin entry point.
 JUCE_EXPORTED_FUNCTION IPluginFactory* PLUGIN_API GetPluginFactory()
 {
-    PluginHostType::jucePlugInClientCurrentWrapperType = AudioProcessor::wrapperType_VST3;
-
-   #if JUCE_MSVC || (JUCE_WINDOWS && JUCE_CLANG)
-    // Cunning trick to force this function to be exported. Life's too short to
-    // faff around creating .def files for this kind of thing.
-    #if JUCE_32BIT
-     #pragma comment(linker, "/EXPORT:GetPluginFactory=_GetPluginFactory@0")
-    #else
-     #pragma comment(linker, "/EXPORT:GetPluginFactory=GetPluginFactory")
-    #endif
-   #endif
-
-    if (globalFactory == nullptr)
+  PluginHostType::jucePlugInClientCurrentWrapperType = AudioProcessor::wrapperType_VST3;
+  
+#if JUCE_MSVC || (JUCE_WINDOWS && JUCE_CLANG)
+  // Cunning trick to force this function to be exported. Life's too short to
+  // faff around creating .def files for this kind of thing.
+  #if JUCE_32BIT
+    #pragma comment(linker, "/EXPORT:GetPluginFactory=_GetPluginFactory@0")
+  #else
+    #pragma comment(linker, "/EXPORT:GetPluginFactory=GetPluginFactory")
+  #endif
+#endif
+  
+  const char8 *pszName = JucePlugin_Name;
+  std::string sName;
+ 
+  bool bFoundMarker = 0 == memcmp((void *) pgCommsMem, (void *) "CADVSTMark", 10);
+  
+  if(!bFoundMarker)
+  {
+    std::string sFull = std::string((const char*) sgOrigVst);
+    std::string sFileName;
+    std::string::size_type uFoundSlash = sFull.find_last_of("/\\");
+    if (uFoundSlash != std::string::npos)
     {
-        globalFactory = new JucePluginFactory();
-
-        static const PClassInfo2 componentClass (JuceVST3Component::iid,
-                                                 PClassInfo::kManyInstances,
-                                                 kVstAudioEffectClass,
-                                                 JucePlugin_Name,
-                                                 JucePlugin_Vst3ComponentFlags,
-                                                 JucePlugin_Vst3Category,
-                                                 JucePlugin_Manufacturer,
-                                                 JucePlugin_VersionString,
-                                                 kVstVersionString);
-
-        globalFactory->registerClass (componentClass, createComponentInstance);
-
-        static const PClassInfo2 controllerClass (JuceVST3EditController::iid,
-                                                  PClassInfo::kManyInstances,
-                                                  kVstComponentControllerClass,
-                                                  JucePlugin_Name,
-                                                  JucePlugin_Vst3ComponentFlags,
-                                                  JucePlugin_Vst3Category,
-                                                  JucePlugin_Manufacturer,
-                                                  JucePlugin_VersionString,
-                                                  kVstVersionString);
-
-        globalFactory->registerClass (controllerClass, createControllerInstance);
+      sFileName = sFull.substr(0, uFoundSlash);
+      sName = sFull.substr(uFoundSlash+1);
+      sName += " (PluginController)";
+      pszName = (const char8 *)sName.c_str();
     }
-    else
-    {
-        globalFactory->addRef();
-    }
-
-    return dynamic_cast<IPluginFactory*> (globalFactory);
+  }
+  
+  if (globalFactory == nullptr)
+  {
+    globalFactory = new JucePluginFactory();
+    
+    static const PClassInfo2 componentClass (JuceVST3Component::iid,
+                                             PClassInfo::kManyInstances,
+                                             kVstAudioEffectClass,
+                                             pszName,
+                                             JucePlugin_Vst3ComponentFlags,
+                                             JucePlugin_Vst3Category,
+                                             JucePlugin_Manufacturer,
+                                             JucePlugin_VersionString,
+                                             kVstVersionString);
+    
+    globalFactory->registerClass (componentClass, createComponentInstance);
+    
+    static const PClassInfo2 controllerClass (JuceVST3EditController::iid,
+                                              PClassInfo::kManyInstances,
+                                              kVstComponentControllerClass,
+                                              pszName,
+                                              JucePlugin_Vst3ComponentFlags,
+                                              JucePlugin_Vst3Category,
+                                              JucePlugin_Manufacturer,
+                                              JucePlugin_VersionString,
+                                              kVstVersionString);
+    
+    globalFactory->registerClass (controllerClass, createControllerInstance);
+  }
+  else
+  {
+    globalFactory->addRef();
+  }
+  
+  return dynamic_cast<IPluginFactory*> (globalFactory);
 }
 
+////==============================================================================
+//// The VST3 plugin entry point.
+//JUCE_EXPORTED_FUNCTION IPluginFactory* PLUGIN_API GetPluginFactory()
+//{
+//    PluginHostType::jucePlugInClientCurrentWrapperType = AudioProcessor::wrapperType_VST3;
+//
+//   #if JUCE_MSVC || (JUCE_WINDOWS && JUCE_CLANG)
+//    // Cunning trick to force this function to be exported. Life's too short to
+//    // faff around creating .def files for this kind of thing.
+//    #if JUCE_32BIT
+//     #pragma comment(linker, "/EXPORT:GetPluginFactory=_GetPluginFactory@0")
+//    #else
+//     #pragma comment(linker, "/EXPORT:GetPluginFactory=GetPluginFactory")
+//    #endif
+//   #endif
+//
+//    if (globalFactory == nullptr)
+//    {
+//        globalFactory = new JucePluginFactory();
+//
+//        static const PClassInfo2 componentClass (JuceVST3Component::iid,
+//                                                 PClassInfo::kManyInstances,
+//                                                 kVstAudioEffectClass,
+//                                                 JucePlugin_Name,
+//                                                 JucePlugin_Vst3ComponentFlags,
+//                                                 JucePlugin_Vst3Category,
+//                                                 JucePlugin_Manufacturer,
+//                                                 JucePlugin_VersionString,
+//                                                 kVstVersionString);
+//
+//        globalFactory->registerClass (componentClass, createComponentInstance);
+//
+//        static const PClassInfo2 controllerClass (JuceVST3EditController::iid,
+//                                                  PClassInfo::kManyInstances,
+//                                                  kVstComponentControllerClass,
+//                                                  JucePlugin_Name,
+//                                                  JucePlugin_Vst3ComponentFlags,
+//                                                  JucePlugin_Vst3Category,
+//                                                  JucePlugin_Manufacturer,
+//                                                  JucePlugin_VersionString,
+//                                                  kVstVersionString);
+//
+//        globalFactory->registerClass (controllerClass, createControllerInstance);
+//    }
+//    else
+//    {
+//        globalFactory->addRef();
+//    }
+//
+//    return dynamic_cast<IPluginFactory*> (globalFactory);
+//}
+
+// CAD Change END
 //==============================================================================
 #if JUCE_WINDOWS
 extern "C" BOOL WINAPI DllMain (HINSTANCE instance, DWORD reason, LPVOID) { if (reason == DLL_PROCESS_ATTACH) Process::setCurrentModuleInstanceHandle (instance); return true; }

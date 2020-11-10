@@ -47,7 +47,9 @@ public:
                                                   getAppProperties().getUserSettings(), true), true);
 
         setResizable (true, false);
-        setResizeLimits (300, 400, 800, 1500);
+		// CAD Change START
+        setResizeLimits (300, 400, 10000, 10000);
+		// CAD Change END
         setTopLeftPosition (60, 60);
 
         restoreWindowStateFromString (getAppProperties().getUserSettings()->getValue ("listWindowPos"));
@@ -93,7 +95,9 @@ MainHostWindow::MainHostWindow()
    #else
     setResizable (true, false);
     setResizeLimits (500, 400, 10000, 10000);
-    centreWithSize (800, 600);
+	// CAD Change START
+    centreWithSize (1500, 1500);
+	// CAD Change END
    #endif
 
     graphHolder.reset (new GraphDocumentComponent (formatManager, deviceManager, knownPluginList));
