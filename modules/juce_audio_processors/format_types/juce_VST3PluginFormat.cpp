@@ -3350,11 +3350,9 @@ void VST3PluginFormat::createPluginInstance (const PluginDescription& descriptio
         if (const VST3ModuleHandle::Ptr module = VST3ModuleHandle::findOrCreateModule (file, description))
         {
             std::unique_ptr<VST3ComponentHolder> holder (new VST3ComponentHolder (module));
-
             if (holder->initialise())
             {
                 result.reset (new VST3PluginInstance (holder.release()));
-
                 if (! result->initialise())
                     result.reset();
             }

@@ -3319,12 +3319,16 @@ private:
 
 using namespace juce;
 
+#define CAD_CODE
+#ifdef CAD_CODE
 // CAD Change START
 
-extern char pgCommsMem[1024+8];
-extern int  *pgChildID;
-extern int  *pgCategory;
-extern char *sgOrigVst;
+extern char     pgCommsMem[1024+8];
+extern int      *pgChildID;
+extern int      *pgCategory;
+extern char     *sgOrigVst;
+extern char     *sgName;
+extern uint8_t  *pgGuid;
 
 //==============================================================================
 // The VST3 plugin entry point.
@@ -3343,29 +3347,48 @@ JUCE_EXPORTED_FUNCTION IPluginFactory* PLUGIN_API GetPluginFactory()
 #endif
   
   const char8 *pszName = JucePlugin_Name;
+  FUID        aeFuid = JuceVST3Component::iid;
+  FUID        ccFuid = JuceVST3EditController::iid;
+  
   std::string sName;
  
   bool bFoundMarker = 0 == memcmp((void *) pgCommsMem, (void *) "CADVSTMark", 10);
   
   if(!bFoundMarker)
   {
-    std::string sFull = std::string((const char*) sgOrigVst);
-    std::string sFileName;
-    std::string::size_type uFoundSlash = sFull.find_last_of("/\\");
-    if (uFoundSlash != std::string::npos)
+    sName = sgName;
+    sName += " (PluginController)";
+    pszName = (const char8 *)sName.c_str();
+
+    TUID aeTuid;
+    TUID ccTuid;
+
+    memcpy(aeTuid, pgGuid, 16);
+    memcpy(ccTuid, pgGuid, 16);
+
+    uint8_t aeMangle[8] = {'C', 'a', 'd', 'L', 'A', 'E', 'C', 'L'};
+    uint8_t ccMangle[8] = {'C', 'a', 'd', 'L', 'C', 'C', 'C', 'L'};
+
+    for(int c = 0; c < 16; c++)
     {
-      sFileName = sFull.substr(0, uFoundSlash);
-      sName = sFull.substr(uFoundSlash+1);
-      sName += " (PluginController)";
-      pszName = (const char8 *)sName.c_str();
+      aeTuid[c] = aeTuid[c] ^ aeMangle[c%8];
+      ccTuid[c] = ccTuid[c] ^ ccMangle[c%8];
     }
+    
+    aeFuid = FUID::fromTUID(aeTuid);
+    FUID *pAeIid = (FUID *)&JuceVST3Component::iid;
+    *pAeIid = FUID::fromTUID(aeTuid);
+    
+    ccFuid = FUID::fromTUID(ccTuid);
+    FUID *pCcIid = (FUID *)&JuceVST3EditController::iid;
+    *pCcIid = FUID::fromTUID(ccTuid);
   }
   
   if (globalFactory == nullptr)
   {
     globalFactory = new JucePluginFactory();
     
-    static const PClassInfo2 componentClass (JuceVST3Component::iid,
+    static const PClassInfo2 componentClass (aeFuid,
                                              PClassInfo::kManyInstances,
                                              kVstAudioEffectClass,
                                              pszName,
@@ -3377,7 +3400,7 @@ JUCE_EXPORTED_FUNCTION IPluginFactory* PLUGIN_API GetPluginFactory()
     
     globalFactory->registerClass (componentClass, createComponentInstance);
     
-    static const PClassInfo2 controllerClass (JuceVST3EditController::iid,
+    static const PClassInfo2 controllerClass (ccFuid,
                                               PClassInfo::kManyInstances,
                                               kVstComponentControllerClass,
                                               pszName,
@@ -3397,57 +3420,60 @@ JUCE_EXPORTED_FUNCTION IPluginFactory* PLUGIN_API GetPluginFactory()
   return dynamic_cast<IPluginFactory*> (globalFactory);
 }
 
-////==============================================================================
-//// The VST3 plugin entry point.
-//JUCE_EXPORTED_FUNCTION IPluginFactory* PLUGIN_API GetPluginFactory()
-//{
-//    PluginHostType::jucePlugInClientCurrentWrapperType = AudioProcessor::wrapperType_VST3;
-//
-//   #if JUCE_MSVC || (JUCE_WINDOWS && JUCE_CLANG)
-//    // Cunning trick to force this function to be exported. Life's too short to
-//    // faff around creating .def files for this kind of thing.
-//    #if JUCE_32BIT
-//     #pragma comment(linker, "/EXPORT:GetPluginFactory=_GetPluginFactory@0")
-//    #else
-//     #pragma comment(linker, "/EXPORT:GetPluginFactory=GetPluginFactory")
-//    #endif
-//   #endif
-//
-//    if (globalFactory == nullptr)
-//    {
-//        globalFactory = new JucePluginFactory();
-//
-//        static const PClassInfo2 componentClass (JuceVST3Component::iid,
-//                                                 PClassInfo::kManyInstances,
-//                                                 kVstAudioEffectClass,
-//                                                 JucePlugin_Name,
-//                                                 JucePlugin_Vst3ComponentFlags,
-//                                                 JucePlugin_Vst3Category,
-//                                                 JucePlugin_Manufacturer,
-//                                                 JucePlugin_VersionString,
-//                                                 kVstVersionString);
-//
-//        globalFactory->registerClass (componentClass, createComponentInstance);
-//
-//        static const PClassInfo2 controllerClass (JuceVST3EditController::iid,
-//                                                  PClassInfo::kManyInstances,
-//                                                  kVstComponentControllerClass,
-//                                                  JucePlugin_Name,
-//                                                  JucePlugin_Vst3ComponentFlags,
-//                                                  JucePlugin_Vst3Category,
-//                                                  JucePlugin_Manufacturer,
-//                                                  JucePlugin_VersionString,
-//                                                  kVstVersionString);
-//
-//        globalFactory->registerClass (controllerClass, createControllerInstance);
-//    }
-//    else
-//    {
-//        globalFactory->addRef();
-//    }
-//
-//    return dynamic_cast<IPluginFactory*> (globalFactory);
-//}
+#else
+
+//==============================================================================
+// The VST3 plugin entry point.
+JUCE_EXPORTED_FUNCTION IPluginFactory* PLUGIN_API GetPluginFactory()
+{
+    PluginHostType::jucePlugInClientCurrentWrapperType = AudioProcessor::wrapperType_VST3;
+
+   #if JUCE_MSVC || (JUCE_WINDOWS && JUCE_CLANG)
+    // Cunning trick to force this function to be exported. Life's too short to
+    // faff around creating .def files for this kind of thing.
+    #if JUCE_32BIT
+     #pragma comment(linker, "/EXPORT:GetPluginFactory=_GetPluginFactory@0")
+    #else
+     #pragma comment(linker, "/EXPORT:GetPluginFactory=GetPluginFactory")
+    #endif
+   #endif
+
+    if (globalFactory == nullptr)
+    {
+        globalFactory = new JucePluginFactory();
+
+        static const PClassInfo2 componentClass (JuceVST3Component::iid,
+                                                 PClassInfo::kManyInstances,
+                                                 kVstAudioEffectClass,
+                                                 JucePlugin_Name,
+                                                 JucePlugin_Vst3ComponentFlags,
+                                                 JucePlugin_Vst3Category,
+                                                 JucePlugin_Manufacturer,
+                                                 JucePlugin_VersionString,
+                                                 kVstVersionString);
+
+        globalFactory->registerClass (componentClass, createComponentInstance);
+
+        static const PClassInfo2 controllerClass (JuceVST3EditController::iid,
+                                                  PClassInfo::kManyInstances,
+                                                  kVstComponentControllerClass,
+                                                  JucePlugin_Name,
+                                                  JucePlugin_Vst3ComponentFlags,
+                                                  JucePlugin_Vst3Category,
+                                                  JucePlugin_Manufacturer,
+                                                  JucePlugin_VersionString,
+                                                  kVstVersionString);
+
+        globalFactory->registerClass (controllerClass, createControllerInstance);
+    }
+    else
+    {
+        globalFactory->addRef();
+    }
+
+    return dynamic_cast<IPluginFactory*> (globalFactory);
+}
+#endif // CAD_CODE
 
 // CAD Change END
 //==============================================================================
