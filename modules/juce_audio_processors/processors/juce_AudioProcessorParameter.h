@@ -283,12 +283,22 @@ public:
     /** @internal */
     void sendValueChangedMessageToListeners (float newValue);
 
+    int getOrigParameterIndex(void)
+    {
+        return origParameterIndex;
+    }
+  
+    void setOrigParameterIndex(int parameterIndex)
+    {
+        origParameterIndex = parameterIndex;
+    }
 private:
     //==============================================================================
     friend class AudioProcessor;
     friend class LegacyAudioParameter;
     AudioProcessor* processor = nullptr;
     int parameterIndex = -1;
+    int origParameterIndex = -1;
     CriticalSection listenerLock;
     Array<Listener*> listeners;
     mutable StringArray valueStrings;

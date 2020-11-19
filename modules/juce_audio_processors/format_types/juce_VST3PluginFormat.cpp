@@ -27,7 +27,6 @@
 
 #include "juce_VST3Headers.h"
 #include "juce_VST3Common.h"
-
 namespace juce
 {
 
@@ -2786,9 +2785,10 @@ private:
                                              i,
                                              paramInfo.id,
                                              (paramInfo.flags & Vst::ParameterInfo::kCanAutomate) != 0);
-
             if ((paramInfo.flags & Vst::ParameterInfo::kIsBypass) != 0)
                 bypassParam = param;
+
+            param->setOrigParameterIndex(paramInfo.id);
 
             std::function<AudioProcessorParameterGroup*(Vst::UnitID)> findOrCreateGroup;
             findOrCreateGroup = [&groupMap, &infoMap, &findOrCreateGroup] (Vst::UnitID groupID)
@@ -3280,16 +3280,26 @@ int VST3HostContext::getIndexOfParamID (Vst::ParamID paramID)
 
     if (result < 0)
     {
-        auto numParams = plugin->editController->getParameterCount();
-
-        for (int i = 0; i < numParams; ++i)
+        const Array<AudioProcessorParameter *> &parameters = plugin->getParameters();
+      
+        for (int i = 0; i < parameters.size(); ++i)
         {
-            Vst::ParameterInfo paramInfo;
-            plugin->editController->getParameterInfo (i, paramInfo);
-            paramToIndexMap[paramInfo.id] = i;
+            paramToIndexMap[parameters[i]->getOrigParameterIndex()] = i;
         }
-
         result = getMappedParamID (paramID);
+
+//        auto numParams = plugin->editController->getParameterCount();
+//
+//        for (int i = 0; i < numParams; ++i) //this looks wrong!!!
+//        {
+//            Vst::ParameterInfo paramInfo;
+//
+//            plugin->editController->getParameterInfo (i, paramInfo);
+//            paramToIndexMap[paramInfo.id] = i;
+//            CADLogInfo("[%d] = [%u]", i, paramInfo.id);
+//        }
+//
+//        result = getMappedParamID (paramID);
     }
 
     return result;
