@@ -3357,7 +3357,7 @@ JUCE_EXPORTED_FUNCTION IPluginFactory* PLUGIN_API GetPluginFactory()
   if(!bFoundMarker)
   {
     sName = sgName;
-    sName += " (PluginController)";
+    sName += " (PluginController VST3)";
     pszName = (const char8 *)sName.c_str();
 
     TUID aeTuid;
