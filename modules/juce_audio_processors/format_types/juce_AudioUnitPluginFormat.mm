@@ -345,7 +345,31 @@ public:
               valueLabel (label),
               defaultValue (normaliseParamValue (defaultParameterValue))
         {
-            auValueStrings = Parameter::getAllValueStrings();
+            // Parameter::getAllValueStrings() doesn't work for audio units that implement kAudioUnitProperty_ParameterValueStrings and not kAudioUnitProperty_ParameterStringFromValue
+            if(discrete)
+            {
+              CFArrayRef cfaNamedParams;
+      
+              UInt32   uPropertySize = sizeof(cfaNamedParams);
+              OSStatus err = AudioUnitGetProperty (pluginInstance.audioUnit, kAudioUnitProperty_ParameterValueStrings, kAudioUnitScope_Global, paramID, &cfaNamedParams, &uPropertySize);
+      
+              if (!err && cfaNamedParams)
+              {
+                numSteps = static_cast<int>(CFArrayGetCount(cfaNamedParams));
+      
+                for(CFIndex uPvs = 0; uPvs < numSteps; uPvs++)
+                {
+                  CFStringRef cfRef = (CFStringRef)CFArrayGetValueAtIndex(cfaNamedParams, uPvs);
+                  auValueStrings.add(juce::String::fromCFString(cfRef));
+                }
+      
+                CFRelease(cfaNamedParams);
+              }
+            }
+          
+            // otherwise run existing code
+            if(auValueStrings.size() == 0)
+              auValueStrings = Parameter::getAllValueStrings();
         }
 
         float getValue() const override
@@ -511,7 +535,7 @@ public:
         const String name;
         const AudioUnitParameterValue minValue, maxValue, range;
         const bool automatable, discrete;
-        const int numSteps;
+              int numSteps;
         const bool valuesHaveStrings, isSwitch;
         const String valueLabel;
         const AudioUnitParameterValue defaultValue;
