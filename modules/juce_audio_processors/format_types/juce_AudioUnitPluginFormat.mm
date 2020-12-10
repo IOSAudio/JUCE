@@ -1494,11 +1494,33 @@ public:
 
                         auto label = [info]() -> String
                         {
-                            if (info.unit == kAudioUnitParameterUnit_Percent)       return "%";
-                            if (info.unit == kAudioUnitParameterUnit_Seconds)       return "s";
-                            if (info.unit == kAudioUnitParameterUnit_Hertz)         return "Hz";
-                            if (info.unit == kAudioUnitParameterUnit_Decibels)      return "dB";
-                            if (info.unit == kAudioUnitParameterUnit_Milliseconds)  return "ms";
+                            if (info.unit == kAudioUnitParameterUnit_Percent)             return "%";
+                            if (info.unit == kAudioUnitParameterUnit_Seconds)             return "s";
+                            if (info.unit == kAudioUnitParameterUnit_Hertz)               return "Hz";
+                            if (info.unit == kAudioUnitParameterUnit_Decibels)            return "dB";
+                            if (info.unit == kAudioUnitParameterUnit_Milliseconds)        return "ms";
+                            if (info.unit == kAudioUnitParameterUnit_EqualPowerCrossfade) return "%";
+                            if (info.unit == kAudioUnitParameterUnit_Boolean)             return "T/F";
+                            if (info.unit == kAudioUnitParameterUnit_Seconds)             return "Secs";
+                            if (info.unit == kAudioUnitParameterUnit_SampleFrames)        return "Samps";
+                            if ((info.unit == kAudioUnitParameterUnit_Phase) ||
+                               (info.unit == kAudioUnitParameterUnit_Degrees))            return "Degr.";
+                            if ((info.unit == kAudioUnitParameterUnit_Cents) ||
+                               (info.unit == kAudioUnitParameterUnit_AbsoluteCents))      return "Cents";
+                            if (info.unit == kAudioUnitParameterUnit_RelativeSemiTones)   return "S-T";
+                            if ((info.unit == kAudioUnitParameterUnit_MIDINoteNumber) ||
+                               (info.unit == kAudioUnitParameterUnit_MIDIController))     return "Midi";
+                            if ((info.unit == kAudioUnitParameterUnit_MixerFaderCurve1) ||
+                               (info.unit == kAudioUnitParameterUnit_LinearGain))         return "Gain";
+                            if (info.unit == kAudioUnitParameterUnit_Pan)                 return "L/R";
+                            if (info.unit == kAudioUnitParameterUnit_Meters)              return "Mtrs";
+                            if (info.unit == kAudioUnitParameterUnit_Octaves)             return "8ve";
+                            if (info.unit == kAudioUnitParameterUnit_BPM)                 return "BPM";
+                            if (info.unit == kAudioUnitParameterUnit_Beats)               return "Beats";
+                            if (info.unit == kAudioUnitParameterUnit_Ratio)               return "Ratio";
+                            if (info.unit == kAudioUnitParameterUnit_Rate)                return "Rate";
+                            if (info.unit == kAudioUnitParameterUnit_Indexed)             return "Indexed";
+                            if (info.unit == kAudioUnitParameterUnit_CustomUnit)          return String::fromCFString(info.unitName);
 
                             return {};
                         }();
