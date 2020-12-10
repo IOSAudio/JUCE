@@ -365,11 +365,34 @@ public:
       
                 CFRelease(cfaNamedParams);
               }
+              
+              if(auValueStrings.size() == 0)
+              {
+                if(!valuesHaveStrings)
+                {
+                  // Parameter::getAllValueStrings() doesn't work for audio units that dont implement kAudioUnitProperty_ParameterValueStrings and have a min value of non 0
+                  numSteps = (uint32_t)(maxValue+1 - minValue);
+                  for(uint32_t uIndex = 0; uIndex < numSteps; uIndex++)
+                  {
+                    float fValue = minValue + uIndex;
+                    
+                    char buffer[128];
+                    
+                    if((int)fValue == fValue)
+                      sprintf(buffer, "%d", (int)(fValue));
+                    else
+                      sprintf(buffer, "%.2f", fValue);
+                    
+                    auValueStrings.add(buffer);
+                  }
+                }
+                else
+                {
+                  // otherwise run existing code
+                  auValueStrings = Parameter::getAllValueStrings();
+                }
+              }
             }
-          
-            // otherwise run existing code
-            if(auValueStrings.size() == 0)
-              auValueStrings = Parameter::getAllValueStrings();
         }
 
         float getValue() const override
