@@ -844,7 +844,8 @@ struct VSTPluginInstance     : public AudioPluginInstance,
                       int numParamSteps,
                       bool isBoolSwitch,
                       const StringArray& paramValueStrings,
-                      const VSTXMLInfo::ValueType* paramValueType)
+                      const VSTXMLInfo::ValueType* paramValueType,
+                      int paramIndex)
             : pluginInstance (parent),
               name (paramName),
               shortNames (shortParamNames),
@@ -857,6 +858,7 @@ struct VSTPluginInstance     : public AudioPluginInstance,
               vstValueStrings (paramValueStrings),
               valueType (paramValueType)
         {
+          setOrigParameterIndex(paramIndex);
         }
 
         float getValue() const override
@@ -1074,7 +1076,7 @@ struct VSTPluginInstance     : public AudioPluginInstance,
 
             newParameterTree.addChild (std::make_unique<VSTParameter> (*this, paramName, shortParamNames, defaultValue,
                                                                        label, isAutomatable, isDiscrete, numSteps,
-                                                                       isBoolSwitch, parameterValueStrings, valueType));
+                                                                       isBoolSwitch, parameterValueStrings, valueType, i));
         }
 
         setParameterTree (std::move (newParameterTree));
