@@ -345,6 +345,9 @@ public:
               valueLabel (label),
               defaultValue (normaliseParamValue (defaultParameterValue))
         {
+            // Store original parameter index in base
+            setOrigParameterIndex(parameterID);
+
             // Parameter::getAllValueStrings() doesn't work for audio units that implement kAudioUnitProperty_ParameterValueStrings and not kAudioUnitProperty_ParameterStringFromValue
             if(discrete)
             {
