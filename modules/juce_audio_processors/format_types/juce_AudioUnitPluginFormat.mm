@@ -147,26 +147,25 @@ namespace AudioUnitFormatHelpers
     {
         if (fileOrIdentifier.startsWithIgnoreCase (auIdentifierPrefix))
         {
-            String s (fileOrIdentifier.substring (jmax (fileOrIdentifier.lastIndexOfChar (':'),
-                                                        fileOrIdentifier.lastIndexOfChar ('/')) + 1));
+            // Original code doesnt work for codes containing ',', ':' or '/'
+            // find first slash, then codes are always 4 bytes sperated by commas
 
-            StringArray tokens;
-            tokens.addTokens (s, ",", StringRef());
-            tokens.removeEmptyStrings();
+            String s (fileOrIdentifier.substring (jmax (fileOrIdentifier.indexOfChar (':'),
+                                                        fileOrIdentifier.indexOfChar ('/')) + 1));
 
-            if (tokens.size() == 3)
+            if ((s.length() == 14) && (s[4] == ',') && (s[9] == ','))
             {
                 zerostruct (desc);
-                desc.componentType         = stringToOSType (tokens[0]);
-                desc.componentSubType      = stringToOSType (tokens[1]);
-                desc.componentManufacturer = stringToOSType (tokens[2]);
+                desc.componentType         = stringToOSType (s.substring(0,4));
+                desc.componentSubType      = stringToOSType (s.substring(5,9));
+                desc.componentManufacturer = stringToOSType (s.substring(10,14));
 
                 if (AudioComponent comp = AudioComponentFindNext (nullptr, &desc))
                 {
                     getNameAndManufacturer (comp, name, manufacturer);
 
                     if (manufacturer.isEmpty())
-                        manufacturer = tokens[2];
+                        manufacturer = s.substring(10,14);
 
                     if (version.isEmpty())
                     {
