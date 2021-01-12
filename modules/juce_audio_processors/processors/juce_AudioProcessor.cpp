@@ -1233,7 +1233,7 @@ void AudioProcessor::beginParameterChangeGesture (int parameterIndex)
            #if JUCE_DEBUG && ! JUCE_DISABLE_AUDIOPROCESSOR_BEGIN_END_GESTURE_CHECKING
             // This means you've called beginParameterChangeGesture twice in succession without a matching
             // call to endParameterChangeGesture. That might be fine in most hosts, but better to avoid doing it.
-            jassert (! changingParams[parameterIndex]);
+            //ARCJUCE jassert (! changingParams[parameterIndex]);
             changingParams.setBit (parameterIndex);
            #endif
 
@@ -1453,7 +1453,7 @@ void AudioProcessorParameter::beginChangeGesture()
     // This means you've called beginChangeGesture twice in succession without
     // a matching call to endChangeGesture. That might be fine in most hosts,
     // but it would be better to avoid doing it.
-    jassert (! isPerformingGesture);
+    //ARCJUCE jassert (! isPerformingGesture);
     isPerformingGesture = true;
    #endif
 

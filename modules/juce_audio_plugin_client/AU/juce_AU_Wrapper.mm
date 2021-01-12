@@ -97,7 +97,7 @@ template <> struct ContainerDeletePolicy<const __CFString>   { static void destr
 // make sure the audio processor is initialized before the AUBase class
 struct AudioProcessorHolder
 {
-    AudioProcessorHolder (bool initialiseGUI)
+    AudioProcessorHolder (bool initialiseGUI, AudioUnit component)
     {
         if (initialiseGUI)
         {
@@ -108,7 +108,10 @@ struct AudioProcessorHolder
             initialiseJuce_GUI();
         }
 
-        juceFilter.reset (createPluginFilterOfType (AudioProcessor::wrapperType_AudioUnit));
+        AudioComponentDescription *pDescription = new AudioComponentDescription;
+        AudioComponentGetDescription((AudioComponent)component, pDescription);
+      
+        juceFilter.reset (createPluginFilterOfType (AudioProcessor::wrapperType_AudioUnit, pDescription));
 
         // audio units do not have a notion of enabled or un-enabled buses
         juceFilter->enableAllBuses();
@@ -126,7 +129,7 @@ class JuceAU   : public AudioProcessorHolder,
 {
 public:
     JuceAU (AudioUnit component)
-        : AudioProcessorHolder (activePlugins.size() + activeUIs.size() == 0),
+        : AudioProcessorHolder (activePlugins.size() + activeUIs.size() == 0, component),
           MusicDeviceBase (component,
                            (UInt32) AudioUnitHelpers::getBusCount (juceFilter.get(), true),
                            (UInt32) AudioUnitHelpers::getBusCount (juceFilter.get(), false)),
@@ -948,8 +951,8 @@ public:
                 outParameterInfo.minValue = 0.0f;
                 outParameterInfo.maxValue = getMaximumParameterValue (param);
                 outParameterInfo.defaultValue = param->getDefaultValue() * getMaximumParameterValue (param);
-                jassert (outParameterInfo.defaultValue >= outParameterInfo.minValue
-                      && outParameterInfo.defaultValue <= outParameterInfo.maxValue);
+//ARCJUCELOOKAT                jassert (outParameterInfo.defaultValue >= outParameterInfo.minValue
+//                      && outParameterInfo.defaultValue <= outParameterInfo.maxValue);
 
                 return noErr;
             }
