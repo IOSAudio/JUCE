@@ -1586,7 +1586,15 @@ public:
         }
 
         setParameterTree (std::move (newParameterTree));
-
+      
+        // ok here we have the flatparameterlist with its wonky indexing so we need to fixup paramIDToIndex to match it
+        paramIDToIndex.clear();
+        auto parameters = getParameters();
+        for(auto param : getParameters())
+        {
+          paramIDToIndex.getReference (param->getOrigParameterIndex()) = param->getParameterIndex();  
+        }
+        
         UInt32 propertySize = 0;
         Boolean writable = false;
 
@@ -1852,7 +1860,7 @@ private:
             if (! paramIDToIndex.contains (paramID))
                 return;
 
-            paramIndex = static_cast<int> (paramIDToIndex [paramID]);
+            paramIndex = static_cast<int> (paramIDToIndex [paramID]); // this is just plain wrong, all paramIDToIndex does is work with a linear list with no gaps, getParameters() is not in this order!!!
 
             if (! isPositiveAndBelow (paramIndex, getParameters().size()))
                 return;
