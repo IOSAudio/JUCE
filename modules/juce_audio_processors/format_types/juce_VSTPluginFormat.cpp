@@ -1223,16 +1223,17 @@ struct VSTPluginInstance     : public AudioPluginInstance,
         initialised = true;
 
         setRateAndBufferSizeDetails (initialSampleRate, initialBlockSize);
-
-        dispatch (Vst2::effIdentify, 0, 0, nullptr, 0);
-
-        if (getSampleRate() > 0)
-            dispatch (Vst2::effSetSampleRate, 0, 0, nullptr, (float) getSampleRate());
-
-        if (getBlockSize() > 0)
-            dispatch (Vst2::effSetBlockSize, 0, jmax (32, getBlockSize()), nullptr, 0);
-
-        dispatch (Vst2::effOpen, 0, 0, nullptr, 0);
+      
+      // following code has already been done, multiple effOpens can crash some vsts
+//        dispatch (Vst2::effIdentify, 0, 0, nullptr, 0);
+//
+//        if (getSampleRate() > 0)
+//            dispatch (Vst2::effSetSampleRate, 0, 0, nullptr, (float) getSampleRate());
+//
+//        if (getBlockSize() > 0)
+//            dispatch (Vst2::effSetBlockSize, 0, jmax (32, getBlockSize()), nullptr, 0);
+//
+//        dispatch (Vst2::effOpen, 0, 0, nullptr, 0);
 
         setRateAndBufferSizeDetails (getSampleRate(), getBlockSize());
 
