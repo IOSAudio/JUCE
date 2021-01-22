@@ -3328,12 +3328,14 @@ extern int      *pgChildID;
 extern int      *pgCategory;
 extern char     *sgOrigVst;
 extern char     *sgName;
+extern char     *pgCategoryName;
 extern uint8_t  *pgGuid;
 
 //==============================================================================
 // The VST3 plugin entry point.
 JUCE_EXPORTED_FUNCTION IPluginFactory* PLUGIN_API GetPluginFactory()
 {
+  printf("*****GetPluginFactory*****\n");
   PluginHostType::jucePlugInClientCurrentWrapperType = AudioProcessor::wrapperType_VST3;
   
 #if JUCE_MSVC || (JUCE_WINDOWS && JUCE_CLANG)
@@ -3387,13 +3389,14 @@ JUCE_EXPORTED_FUNCTION IPluginFactory* PLUGIN_API GetPluginFactory()
   if (globalFactory == nullptr)
   {
     globalFactory = new JucePluginFactory();
-    //ARCTODO we need componentfags and category from wrapped, buggeration
+    //ARCTODO we need componentfags ??
+    
     static const PClassInfo2 componentClass (aeFuid,
                                              PClassInfo::kManyInstances,
                                              kVstAudioEffectClass,
                                              pszName,
                                              JucePlugin_Vst3ComponentFlags,
-                                             JucePlugin_Vst3Category,
+                                             pgCategoryName,
                                              JucePlugin_Manufacturer,
                                              JucePlugin_VersionString,
                                              kVstVersionString);
@@ -3405,7 +3408,7 @@ JUCE_EXPORTED_FUNCTION IPluginFactory* PLUGIN_API GetPluginFactory()
                                               kVstComponentControllerClass,
                                               pszName,
                                               JucePlugin_Vst3ComponentFlags,
-                                              JucePlugin_Vst3Category,
+                                              pgCategoryName,
                                               JucePlugin_Manufacturer,
                                               JucePlugin_VersionString,
                                               kVstVersionString);
