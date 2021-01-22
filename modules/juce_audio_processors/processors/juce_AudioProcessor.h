@@ -81,6 +81,10 @@ public:
     //==============================================================================
     /** Destructor. */
     virtual ~AudioProcessor();
+  
+    //==============================================================================
+    /** Returns the plugin category of this processor. */
+  virtual const String getPluginCategory() const {return "";};
 
     //==============================================================================
     /** Returns the name of this processor. */
@@ -837,6 +841,10 @@ public:
     /** Returns true if this is a MIDI effect plug-in and does no audio processing. */
     virtual bool isMidiEffect() const                           { return false; }
 
+    virtual bool isSynth() const                                { return JucePlugin_IsSynth; }
+
+    virtual int32_t getVSTUniqueId() const                      { return JucePlugin_VSTUniqueID; }
+  
     //==============================================================================
     /** This returns a critical section that will automatically be locked while the host
         is calling the processBlock() method.

@@ -3387,7 +3387,7 @@ JUCE_EXPORTED_FUNCTION IPluginFactory* PLUGIN_API GetPluginFactory()
   if (globalFactory == nullptr)
   {
     globalFactory = new JucePluginFactory();
-    
+    //ARCTODO we need componentfags and category from wrapped, buggeration
     static const PClassInfo2 componentClass (aeFuid,
                                              PClassInfo::kManyInstances,
                                              kVstAudioEffectClass,

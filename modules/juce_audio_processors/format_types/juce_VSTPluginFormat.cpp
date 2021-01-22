@@ -1977,6 +1977,16 @@ struct VSTPluginInstance     : public AudioPluginInstance,
     std::unique_ptr<VSTPluginFormat::ExtraFunctions> extraFunctions;
     bool usesCocoaNSView = false;
 
+    bool isSynth() const override
+    {
+      return isSynthPlugin();
+    }
+  
+    int32_t getVSTUniqueId() const override
+    {
+      return getUID();
+    }
+
 private:
     //==============================================================================
     struct VST2BypassParameter    : Parameter
