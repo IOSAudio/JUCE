@@ -288,9 +288,9 @@ public:
         return origParameterIndex;
     }
   
-    void setOrigParameterIndex(int parameterIndex)
+    void setOrigParameterIndex(int juceParameterIndex)
     {
-        origParameterIndex = parameterIndex;
+        origParameterIndex = juceParameterIndex;
     }
 private:
     //==============================================================================

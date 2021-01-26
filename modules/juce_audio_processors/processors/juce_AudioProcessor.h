@@ -84,7 +84,7 @@ public:
   
     //==============================================================================
     /** Returns the plugin category of this processor. */
-  virtual const String getPluginCategory() const {return "";};
+    virtual const String getPluginCategory() const {return "";}
 
     //==============================================================================
     /** Returns the name of this processor. */
@@ -841,9 +841,19 @@ public:
     /** Returns true if this is a MIDI effect plug-in and does no audio processing. */
     virtual bool isMidiEffect() const                           { return false; }
 
-    virtual bool isSynth() const                                { return JucePlugin_IsSynth; }
-
-    virtual int32_t getVSTUniqueId() const                      { return JucePlugin_VSTUniqueID; }
+    virtual bool isSynth() const
+#ifdef JucePlugin_IsSynth
+      { return JucePlugin_IsSynth; }
+#else
+      { return false; }
+#endif
+  
+    virtual int32_t getVSTUniqueId() const
+#ifdef JucePlugin_VSTUniqueID
+      { return JucePlugin_VSTUniqueID; }
+#else
+      { return -1; }
+#endif
   
     //==============================================================================
     /** This returns a critical section that will automatically be locked while the host
