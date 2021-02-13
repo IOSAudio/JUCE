@@ -1009,7 +1009,7 @@ bool AudioProcessor::Bus::isLayoutSupported (const AudioChannelSet& set, BusesLa
             *ioLayout = owner.getBusesLayout();
 
             // the current layout you supplied is not a valid layout
-            jassertfalse;
+            //ARCFATAL jassertfalse;
         }
     }
 
