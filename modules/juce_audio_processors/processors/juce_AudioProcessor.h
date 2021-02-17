@@ -46,6 +46,7 @@ class JUCE_API  AudioProcessor
 {
 protected:
     struct BusesProperties;
+    struct BusProperties;
 
     //==============================================================================
     /** Constructor.
@@ -551,6 +552,12 @@ public:
     */
     bool addBus (bool isInput);
 
+    /** Dynamically add an additional bus. No checks, use BusProperties
+     
+       @see canApplyBusCountChange, removeBus
+       */
+    void addBus (bool isInput, BusProperties& busesProps);
+
     /** Dynamically remove the latest added bus.
 
         Request the removal of the last bus from the audio processor. If the
@@ -568,6 +575,14 @@ public:
         @see addBus, canRemoveBus
     */
     bool removeBus (bool isInput);
+
+  
+   /** Dynamically remove the latest added bus.
+       
+       Request the removal of the last bus from the audio processor. No checks
+       @see addBus, canRemoveBus
+       */
+  void removeBusNoChecks (bool inputBus);
 
     //==============================================================================
     /** Set the channel layouts of this audio processor.
