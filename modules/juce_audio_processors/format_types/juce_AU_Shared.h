@@ -124,6 +124,7 @@ struct AudioUnitHelpers
         //==============================================================================
         void prepare (int inChannels, int outChannels, int maxFrames)
         {
+            printf("PREPARE %d, %d, %d\n", inChannels, outChannels, maxFrames);
             const int numChannels = jmax (inChannels, outChannels);
 
             scratch.setSize (numChannels, maxFrames);
