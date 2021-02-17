@@ -83,6 +83,11 @@ bool AudioProcessor::addBus (bool isInput)
     return true;
 }
 
+void AudioProcessor::addBus (bool isInput, BusProperties& busesProps)
+{
+  createBus (isInput, busesProps);
+}
+
 bool AudioProcessor::removeBus (bool inputBus)
 {
     auto numBuses = getBusCount (inputBus);
@@ -104,6 +109,17 @@ bool AudioProcessor::removeBus (bool inputBus)
 
     audioIOChanged (true, numChannels > 0);
     return true;
+}
+
+void AudioProcessor::removeBusNoChecks (bool inputBus)
+{
+  auto numBuses = getBusCount (inputBus);
+  
+  auto busIndex = numBuses - 1;
+  auto numChannels = getChannelCountOfBus (inputBus, busIndex);
+  (inputBus ? inputBuses : outputBuses).remove (busIndex);
+  
+  audioIOChanged (true, numChannels > 0);
 }
 
 //==============================================================================
