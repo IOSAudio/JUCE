@@ -675,7 +675,9 @@ public:
         int newCount = currentCount + (isAdding ? 1 : -1);
         AudioUnitScope scope = isInput ? kAudioUnitScope_Input : kAudioUnitScope_Output;
 
-        if (AudioUnitSetProperty (audioUnit, kAudioUnitProperty_ElementCount, scope, 0, &newCount, sizeof (newCount)) == noErr)
+        OSStatus status = AudioUnitSetProperty (audioUnit, kAudioUnitProperty_ElementCount, scope, 0, &newCount, sizeof (newCount));
+      DBG(status);
+        if ( status== noErr)
         {
             getBusProperties (isInput, currentCount, outProperties.busName, outProperties.defaultLayout);
             outProperties.isActivatedByDefault = true;
@@ -709,6 +711,7 @@ public:
                 auto oppositeRequested = (hasOppositeBus ? oppositeRequestedLayouts.getReference (oppositeBusIdx) : AudioChannelSet());
                 auto& possible = supported.getReference (busIdx);
 
+              // ARCFATAL ARCCHANNELS
                 if (requested.isDisabled())
                     return false;
 
@@ -752,6 +755,7 @@ public:
 
                 if (i >= numChannelInfos)
                     return false;
+
             }
         }
 
@@ -846,7 +850,8 @@ public:
                         // try to convert the layout into a tag
                         actualTag = CoreAudioLayouts::toCoreAudio (CoreAudioLayouts::fromCoreAudio (layout));
 
-                        if (actualTag != requestedTag)
+                        // ARCFATAL ARCCHANNELS if (actualTag != requestedTag)
+                        if ((actualTag & 0xffff) != (requestedTag & 0xffff)) // just base on channel count
                         {
                             zerostruct (layout);
                             layout.mChannelLayoutTag = requestedTag;
@@ -2269,6 +2274,7 @@ private:
                     }
                 }
 
+                //supported.clear(); // ARCFATAL ARCCHANNELS
                 (isInput ? supportedInLayouts : supportedOutLayouts).add (supported);
             }
         }
@@ -2286,6 +2292,21 @@ private:
 
                 if (AudioUnitGetProperty (audioUnit, kAudioUnitProperty_SupportedNumChannels, kAudioUnitScope_Global, 0, channelInfos.get(), &propertySize) != noErr)
                     numChannelInfos = 0;
+              
+                // we have an issue where juce takes precedence with the channellayouttags, so if the plugin is a bit dodgy and doesn't fill this out correctly
+                // then juce might not have all the layouts supported
+              for(uint32_t uC = 0; uC < numChannelInfos; uC++)
+                {
+                  if( (channelInfos[uC].inChannels < 0) || (channelInfos[uC].outChannels < 0))
+                  {
+                    // ok we are variable, from the AU docs:
+                    // {–1, –1} indicates that a bus supports any number of input or output channels provided that the input and output channel counts match each other. This is the default configuration for effect units.
+                    // {–1, –2} or {–2, –1} indicates that a bus supports any number of input and output channels; the channel counts on input and output can differ from each other.
+                    // {–1, –3} indicates that a bus supports any number of input channels and up to three output channels.
+
+                    
+                  }
+                }
             }
             else
             {

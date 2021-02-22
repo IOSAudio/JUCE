@@ -1,4 +1,4 @@
-// #define LOG_CALLS
+//#define LOG_CALLS
 #ifndef LOG_CALLS
 /*
  ==============================================================================
@@ -299,7 +299,7 @@ public:
 #if JucePlugin_IsMidiEffect
     return false;
 #elif JucePlugin_IsSynth
-    if (isInput) return false;
+    if (isInput) return false; // you what!!
 #endif
     
     const int busCount = AudioUnitHelpers::getBusCount (juceFilter.get(), isInput);
@@ -393,9 +393,21 @@ public:
   
   UInt32 SupportedNumChannels (const AUChannelInfo** outInfo) override
   {
+//    // ARCFATAL ARCCHANNELS
+//    if (outInfo != nullptr)
+//    {
+//      AUChannelInfo *pChannelInfo = new AUChannelInfo();
+//      pChannelInfo->inChannels = 0;
+//      pChannelInfo->outChannels = -32;
+//
+//      *outInfo = pChannelInfo;
+//    }
+//
+//    return(1);
+    
     if (outInfo != nullptr)
       *outInfo = channelInfo.getRawDataPointer();
-    
+
     return (UInt32) channelInfo.size();
   }
   

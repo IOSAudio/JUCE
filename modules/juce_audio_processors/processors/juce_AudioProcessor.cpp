@@ -783,6 +783,7 @@ bool AudioProcessor::applyBusLayouts (const BusesLayout& layouts)
 
 void AudioProcessor::audioIOChanged (bool busNumberChanged, bool channelNumChanged)
 {
+    printf("%p audioIOChange\n", this);
     auto numInputBuses  = getBusCount (true);
     auto numOutputBuses = getBusCount (false);
 
