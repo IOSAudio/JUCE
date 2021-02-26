@@ -783,7 +783,6 @@ bool AudioProcessor::applyBusLayouts (const BusesLayout& layouts)
 
 void AudioProcessor::audioIOChanged (bool busNumberChanged, bool channelNumChanged)
 {
-    printf("%p audioIOChange\n", this);
     auto numInputBuses  = getBusCount (true);
     auto numOutputBuses = getBusCount (false);
 
@@ -810,7 +809,7 @@ void AudioProcessor::audioIOChanged (bool busNumberChanged, bool channelNumChang
     cachedTotalIns  = countTotalChannels (inputBuses);
     cachedTotalOuts = countTotalChannels (outputBuses);
 
-    printf("%p CACHED_IN = %u, CACHED_OUT = %u\n", this, cachedTotalIns, cachedTotalOuts);
+  printf("audioIOChanged : %p CACHED_IN = %u, CACHED_OUT = %u\n", this, cachedTotalIns, cachedTotalOuts);
   
     if(cachedTotalIns == 1 && cachedTotalOuts == 1)
       int bp =1;

@@ -393,18 +393,6 @@ public:
   
   UInt32 SupportedNumChannels (const AUChannelInfo** outInfo) override
   {
-//    // ARCFATAL ARCCHANNELS
-//    if (outInfo != nullptr)
-//    {
-//      AUChannelInfo *pChannelInfo = new AUChannelInfo();
-//      pChannelInfo->inChannels = 0;
-//      pChannelInfo->outChannels = -32;
-//
-//      *outInfo = pChannelInfo;
-//    }
-//
-//    return(1);
-    
     if (outInfo != nullptr)
       *outInfo = channelInfo.getRawDataPointer();
 
@@ -793,7 +781,7 @@ public:
         discreteRangeSet.addChannel ((AudioChannelSet::ChannelType) (256 + i));
       
       // if the audioprocessor supports this it cannot
-      // really be interested in the bus layouts
+      // really be interested in the bus layouts ARCCHANNEL
       return bus->isLayoutSupported (discreteRangeSet);
     }
     

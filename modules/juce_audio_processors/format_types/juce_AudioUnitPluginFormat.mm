@@ -676,7 +676,6 @@ public:
         AudioUnitScope scope = isInput ? kAudioUnitScope_Input : kAudioUnitScope_Output;
 
         OSStatus status = AudioUnitSetProperty (audioUnit, kAudioUnitProperty_ElementCount, scope, 0, &newCount, sizeof (newCount));
-      DBG(status);
         if ( status== noErr)
         {
             getBusProperties (isInput, currentCount, outProperties.busName, outProperties.defaultLayout);
@@ -711,17 +710,23 @@ public:
                 auto oppositeRequested = (hasOppositeBus ? oppositeRequestedLayouts.getReference (oppositeBusIdx) : AudioChannelSet());
                 auto& possible = supported.getReference (busIdx);
 
-              // ARCFATAL ARCCHANNELS
                 if (requested.isDisabled())
-                    return false;
+                  return false;
+              
+#define CHANNELS_ONLY
+#ifndef CHANNELS_ONLY
+                // ARCCHANNELS
+                // Some plugins use defined layouts and also channelLayouts, so may support (0,-32) but do not supply full channelInfos
+                // defineing CHANNELS_ONLY will use the channelInfo only and not just base it on the layouts
 
                 if (possible.size() > 0 && ! possible.contains (requested))
                     return false;
-
+#endif
+              
                 int i;
                 for (i = 0; i < numChannelInfos; ++i)
                 {
-                    auto& info = channelInfos[i];
+                    auto& info = channelInfos[i]; 
                     auto& thisChannels = (isInput ? info.inChannels  : info.outChannels);
                     auto& opChannels   = (isInput ? info.outChannels : info.inChannels);
 
@@ -849,9 +854,14 @@ public:
 
                         // try to convert the layout into a tag
                         actualTag = CoreAudioLayouts::toCoreAudio (CoreAudioLayouts::fromCoreAudio (layout));
-
-                        // ARCFATAL ARCCHANNELS if (actualTag != requestedTag)
+                      
+                        // ARCCHANNEL sometimes we get a mismatch on layout but channel count is correct
+#define CHANNEL_COUNT_ONLY
+#ifdef CHANNEL_COUNT_ONLY
                         if ((actualTag & 0xffff) != (requestedTag & 0xffff)) // just base on channel count
+#else
+                        if (actualTag != requestedTag) // base on layout tag
+#endif
                         {
                             zerostruct (layout);
                             layout.mChannelLayoutTag = requestedTag;
@@ -2274,7 +2284,6 @@ private:
                     }
                 }
 
-                //supported.clear(); // ARCFATAL ARCCHANNELS
                 (isInput ? supportedInLayouts : supportedOutLayouts).add (supported);
             }
         }
@@ -2310,10 +2319,13 @@ private:
             }
             else
             {
-                numChannelInfos = 1;
-                channelInfos.malloc (static_cast<size_t> (numChannelInfos));
-                channelInfos.get()->inChannels  = -1;
-                channelInfos.get()->outChannels = -1;
+                // this is dodgy, if no numChannel info then use default?? Only important fo our channelinfo stuff?? ARCPRECEDENCE ARCCHANNELS
+                // we may need a better way here, maybe direct access to au values.
+                numChannelInfos = 0;
+//                numChannelInfos = 1;
+//                channelInfos.malloc (static_cast<size_t> (numChannelInfos));
+//                channelInfos.get()->inChannels  = -1;
+//                channelInfos.get()->outChannels = -1;
             }
         }
     }
