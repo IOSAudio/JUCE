@@ -352,8 +352,8 @@ struct AudioUnitHelpers
       
         // ARCHANNELS AUChannelinfos can be larger than 8, with this set to 9 any plugin that has more than 8 channels gets marked as "-1"
         // There are plugins with more than 9 channels
-        //auto maxNumChanToCheckFor = 9;
-        auto maxNumChanToCheckFor = 65;
+        auto maxNumChanToCheckFor = 9;
+        //auto maxNumChanToCheckFor = 65;
 
         auto defaultInputs  = processor.getChannelCountOfBus (true,  0);
         auto defaultOutputs = processor.getChannelCountOfBus (false, 0);
