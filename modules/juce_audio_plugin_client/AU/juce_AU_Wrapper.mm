@@ -2005,15 +2005,24 @@ private:
   AudioUnitParameterID generateAUParameterID (AudioProcessorParameter* param) const
   {
     const String& juceParamID = LegacyAudioParameter::getParamID (param, forceUseLegacyParamIDs);
-    AudioUnitParameterID paramHash = static_cast<AudioUnitParameterID> (juceParamID.hashCode());
+
+    // If we are an int just return
+    if(juceParamID.containsOnly("0123456789"))
+    {
+      return static_cast<AudioUnitParameterID> (juceParamID.getIntValue());
+    }
+    else
+    {
+      AudioUnitParameterID paramHash = static_cast<AudioUnitParameterID> (juceParamID.hashCode());
     
 #if JUCE_USE_STUDIO_ONE_COMPATIBLE_PARAMETERS
-    // studio one doesn't like negative parameters
-    paramHash &= ~(((AudioUnitParameterID) 1) << (sizeof (AudioUnitParameterID) * 8 - 1));
+      // studio one doesn't like negative parameters
+      paramHash &= ~(((AudioUnitParameterID) 1) << (sizeof (AudioUnitParameterID) * 8 - 1));
 #endif
     
-    return forceUseLegacyParamIDs ? static_cast<AudioUnitParameterID> (juceParamID.getIntValue())
-    : paramHash;
+      return forceUseLegacyParamIDs ? static_cast<AudioUnitParameterID> (juceParamID.getIntValue())
+      : paramHash;
+    }
   }
   
   inline AudioUnitParameterID getAUParameterIDForIndex (int paramIndex) const noexcept

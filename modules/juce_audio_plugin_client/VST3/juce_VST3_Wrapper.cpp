@@ -315,18 +315,26 @@ private:
     {
         auto juceParamID = LegacyAudioParameter::getParamID (param, false);
 
-      #if JUCE_FORCE_USE_LEGACY_PARAM_IDS
-        return static_cast<Vst::ParamID> (juceParamID.getIntValue());
-      #else
-        auto paramHash = static_cast<Vst::ParamID> (juceParamID.hashCode());
+      // If we are an int just return
+      if(juceParamID.containsOnly("0123456789"))
+      {
+        return static_cast<Vst::ParamID>(juceParamID.getIntValue());
+      }
+      else
+      {
+        #if JUCE_FORCE_USE_LEGACY_PARAM_IDS
+          return static_cast<Vst::ParamID> (juceParamID.getIntValue());
+        #else
+          auto paramHash = static_cast<Vst::ParamID> (juceParamID.hashCode());
 
-       #if JUCE_USE_STUDIO_ONE_COMPATIBLE_PARAMETERS
-        // studio one doesn't like negative parameters
-        paramHash &= ~(((Vst::ParamID) 1) << (sizeof (Vst::ParamID) * 8 - 1));
-       #endif
+         #if JUCE_USE_STUDIO_ONE_COMPATIBLE_PARAMETERS
+          // studio one doesn't like negative parameters
+          paramHash &= ~(((Vst::ParamID) 1) << (sizeof (Vst::ParamID) * 8 - 1));
+         #endif
 
-        return paramHash;
-      #endif
+          return paramHash;
+        #endif
+      }
     }
 
     //==============================================================================
