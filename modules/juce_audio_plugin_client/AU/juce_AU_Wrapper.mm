@@ -299,7 +299,7 @@ public:
 #if JucePlugin_IsMidiEffect
     return false;
 #elif JucePlugin_IsSynth
-    if (isInput) return false; // you what!!
+    //if (isInput) return false; // you what!!
 #endif
     
     const int busCount = AudioUnitHelpers::getBusCount (juceFilter.get(), isInput);
@@ -393,6 +393,19 @@ public:
   
   UInt32 SupportedNumChannels (const AUChannelInfo** outInfo) override
   {
+//      // ARCFATAL ARCCHANNELS
+//      if (outInfo != nullptr)
+//      {
+//        AUChannelInfo *pChannelInfo = new AUChannelInfo();
+//        pChannelInfo->inChannels = -16;
+//        pChannelInfo->outChannels = -16;
+//
+//        *outInfo = pChannelInfo;
+//      }
+//
+//      return(1);
+//    
+//    // ARCFATALNOW
     if (outInfo != nullptr)
       *outInfo = channelInfo.getRawDataPointer();
 
@@ -768,6 +781,8 @@ public:
   //==============================================================================
   bool busIgnoresLayout (bool isInput, int busNr) const
   {
+    //ARCFATAL ARCCHANNELS
+    return false;
 #ifdef JucePlugin_PreferredChannelConfigurations
     ignoreUnused (isInput, busNr);
     

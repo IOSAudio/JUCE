@@ -2313,6 +2313,7 @@ private:
                     // {–1, –2} or {–2, –1} indicates that a bus supports any number of input and output channels; the channel counts on input and output can differ from each other.
                     // {–1, –3} indicates that a bus supports any number of input channels and up to three output channels.
 
+                    // ARCCHANNELS
                     
                   }
                 }
