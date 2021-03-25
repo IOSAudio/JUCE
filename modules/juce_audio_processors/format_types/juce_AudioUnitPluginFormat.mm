@@ -522,21 +522,57 @@ public:
         {
             return auValueStrings;
         }
-
+      
+#define SEND_PARAMETER_CHANGE_EVENT_ON_MAIN_THREAD
         void sendParameterChangeEvent()
         {
-           #if JUCE_MAC
-            jassert (pluginInstance.audioUnit != nullptr);
-
-            AudioUnitEvent ev;
-            ev.mEventType                        = kAudioUnitEvent_ParameterValueChange;
-            ev.mArgument.mParameter.mAudioUnit   = pluginInstance.audioUnit;
-            ev.mArgument.mParameter.mParameterID = paramID;
-            ev.mArgument.mParameter.mScope       = kAudioUnitScope_Global;
-            ev.mArgument.mParameter.mElement     = 0;
-
-            AUEventListenerNotify (pluginInstance.eventListenerRef, nullptr, &ev);
-           #endif
+            #if JUCE_MAC
+              #ifdef SEND_PARAMETER_CHANGE_EVENT_ON_MAIN_THREAD
+                jassert (pluginInstance.audioUnit != nullptr);
+          
+                // this should always be run on the message thread.
+                // we can get a setParameter from an IOThread which calls sendParameterChangeEvent().
+                // at the same time we can get a getParameter on the message thread which then blocks
+                // now we send an AUEventListenerrNotify here, main thread is blocked so deadlock on pluginInstance.lock
+          
+                // Capture of pluginInstance is a bit wonky and fails every so often so use vars
+                AudioUnit             useAudioUnit     = pluginInstance.audioUnit;
+                AudioUnitParameterID  useParamId       = paramID;
+                AUEventListenerRef    useEventListener = pluginInstance.eventListenerRef;
+          
+                std::function<void()> listenerNotify = [=] ()
+                {
+                  AudioUnitEvent ev;
+                  ev.mEventType                        = kAudioUnitEvent_ParameterValueChange;
+                  ev.mArgument.mParameter.mAudioUnit   = useAudioUnit;
+                  ev.mArgument.mParameter.mParameterID = useParamId;
+                  ev.mArgument.mParameter.mScope       = kAudioUnitScope_Global;
+                  ev.mArgument.mParameter.mElement     = 0;
+                  
+                  AUEventListenerNotify (useEventListener, nullptr, &ev);
+                };
+          
+                if (MessageManager::getInstance()->isThisTheMessageThread())
+                {
+                  listenerNotify();
+                }
+                else
+                {
+                  juce::MessageManager::callAsync(listenerNotify);
+                }
+              #else
+                jassert (pluginInstance.audioUnit != nullptr);
+      
+                AudioUnitEvent ev;
+                ev.mEventType                        = kAudioUnitEvent_ParameterValueChange;
+                ev.mArgument.mParameter.mAudioUnit   = pluginInstance.audioUnit;
+                ev.mArgument.mParameter.mParameterID = paramID;
+                ev.mArgument.mParameter.mScope       = kAudioUnitScope_Global;
+                ev.mArgument.mParameter.mElement     = 0;
+      
+                AUEventListenerNotify (pluginInstance.eventListenerRef, nullptr, &ev);
+              #endif
+            #endif
         }
 
         float normaliseParamValue (float scaledValue) const noexcept
