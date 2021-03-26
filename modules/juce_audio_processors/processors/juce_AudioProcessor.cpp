@@ -512,7 +512,10 @@ void AudioProcessor::setParameterTree (AudioProcessorParameterGroup&& newTree)
     }
 }
 
-void AudioProcessor::refreshParameterList() {}
+bool AudioProcessor::refreshParameterList()
+{
+  return false;
+}
 
 int AudioProcessor::getDefaultNumParameterSteps() noexcept
 {
@@ -783,6 +786,8 @@ bool AudioProcessor::applyBusLayouts (const BusesLayout& layouts)
 
 void AudioProcessor::audioIOChanged (bool busNumberChanged, bool channelNumChanged)
 {
+    // ARCFATAL but channel layouts not updated for dynamic buses!
+  
     auto numInputBuses  = getBusCount (true);
     auto numOutputBuses = getBusCount (false);
 
@@ -1474,7 +1479,7 @@ void AudioProcessorParameter::beginChangeGesture()
     // This means you've called beginChangeGesture twice in succession without
     // a matching call to endChangeGesture. That might be fine in most hosts,
     // but it would be better to avoid doing it.
-    //ARCJUCE jassert (! isPerformingGesture);
+    jassert (! isPerformingGesture);
     isPerformingGesture = true;
    #endif
 

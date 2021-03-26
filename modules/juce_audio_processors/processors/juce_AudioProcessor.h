@@ -22,6 +22,8 @@
 
   ==============================================================================
 */
+// ARCFATAL
+#define JUCE_DISABLE_AUDIOPROCESSOR_BEGIN_END_GESTURE_CHECKING 1
 
 namespace juce
 {
@@ -1062,7 +1064,7 @@ public:
         For most plug-ins it's enough to simply add your parameters in the
         constructor and leave this unimplemented.
     */
-    virtual void refreshParameterList();
+    virtual bool refreshParameterList();
 
     /** Returns a flat list of the parameters in the current tree. */
     const Array<AudioProcessorParameter*>& getParameters() const;

@@ -1006,7 +1006,7 @@ struct VSTPluginInstance     : public AudioPluginInstance,
         setRateAndBufferSizeDetails (sampleRateToUse, blockSizeToUse);
     }
 
-    void refreshParameterList() override
+    bool refreshParameterList() override
     {
         AudioProcessorParameterGroup newParameterTree;
 
@@ -1078,8 +1078,14 @@ struct VSTPluginInstance     : public AudioPluginInstance,
                                                                        label, isAutomatable, isDiscrete, numSteps,
                                                                        isBoolSwitch, parameterValueStrings, valueType, i));
         }
-
-        setParameterTree (std::move (newParameterTree));
+      
+        if(newParameterTree.differentTo(getParameterTree()))
+        {
+          setParameterTree (std::move (newParameterTree));
+          return true;
+        }
+        else
+          return false;
     }
 
     ~VSTPluginInstance() override

@@ -2756,7 +2756,7 @@ private:
         }
     }
 
-    void refreshParameterList() override
+    bool refreshParameterList() override
     {
         AudioProcessorParameterGroup newParameterTree;
 
@@ -2788,7 +2788,7 @@ private:
             if ((paramInfo.flags & Vst::ParameterInfo::kIsBypass) != 0)
                 bypassParam = param;
 
-            param->setOrigParameterIndex(paramInfo.id);
+            param->setOrigParameterIndex((int)paramInfo.id);
 
             std::function<AudioProcessorParameterGroup*(Vst::UnitID)> findOrCreateGroup;
             findOrCreateGroup = [&groupMap, &infoMap, &findOrCreateGroup] (Vst::UnitID groupID)
@@ -2818,7 +2818,13 @@ private:
             group->addChild (std::unique_ptr<AudioProcessorParameter> (param));
         }
 
-        setParameterTree (std::move (newParameterTree));
+        if(newParameterTree.differentTo(getParameterTree()))
+        {
+            setParameterTree (std::move (newParameterTree));
+            return true;
+        }
+        else
+            return false;
     }
 
     void synchroniseStates()
@@ -3284,7 +3290,7 @@ int VST3HostContext::getIndexOfParamID (Vst::ParamID paramID)
       
         for (int i = 0; i < parameters.size(); ++i)
         {
-            paramToIndexMap[parameters[i]->getOrigParameterIndex()] = i;
+            paramToIndexMap[(Vst::ParamID)parameters[i]->getOrigParameterIndex()] = i;
         }
         result = getMappedParamID (paramID);
 

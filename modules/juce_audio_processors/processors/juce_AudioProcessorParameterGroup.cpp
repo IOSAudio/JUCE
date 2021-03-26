@@ -181,6 +181,30 @@ const AudioProcessorParameterGroup* AudioProcessorParameterGroup::getGroupForPar
     return nullptr;
 }
 
+bool AudioProcessorParameterGroup::differentTo(const AudioProcessorParameterGroup &other) const
+  {
+    bool bResult = false;
+    
+    // simple stupid just based on parameter names
+    Array<AudioProcessorParameter *> ourFlatParameterList = getParameters(true);
+    Array<AudioProcessorParameter *> otherFlatParameterList = other.getParameters (true);
+
+    if(ourFlatParameterList.size() == otherFlatParameterList.size())
+    {
+      for(int nP = 0; !bResult && nP < ourFlatParameterList.size(); nP++)
+      {
+        juce::String sOurName   = ourFlatParameterList[nP]->getName(256);
+        juce::String sOtherName = otherFlatParameterList[nP]->getName(256);
+        
+        bResult = (sOurName.compare(sOtherName) != 0);
+      }
+    }
+    else
+      bResult = true;
+    
+    return bResult;
+  }
+
 //==============================================================================
 #if JUCE_UNIT_TESTS
 

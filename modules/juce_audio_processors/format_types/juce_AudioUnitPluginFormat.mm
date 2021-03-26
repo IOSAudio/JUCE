@@ -345,7 +345,7 @@ public:
               defaultValue (normaliseParamValue (defaultParameterValue))
         {
             // Store original parameter index in base
-            setOrigParameterIndex(parameterID);
+            setOrigParameterIndex((int)parameterID);
 
             // Parameter::getAllValueStrings() doesn't work for audio units that implement kAudioUnitProperty_ParameterValueStrings and not kAudioUnitProperty_ParameterStringFromValue
             if(discrete)
@@ -373,10 +373,10 @@ public:
                 if(!valuesHaveStrings)
                 {
                   // Parameter::getAllValueStrings() doesn't work for audio units that dont implement kAudioUnitProperty_ParameterValueStrings and have a min value of non 0
-                  numSteps = (uint32_t)(maxValue+1 - minValue);
-                  for(uint32_t uIndex = 0; uIndex < numSteps; uIndex++)
+                  numSteps = (int)(maxValue+1 - minValue);
+                  for(int nIndex = 0; nIndex < numSteps; nIndex++)
                   {
-                    float fValue = minValue + uIndex;
+                    float fValue = minValue + nIndex;
                     
                     char buffer[128];
                     
@@ -735,7 +735,6 @@ public:
             const bool isInput = (dir == 0);
             auto& requestedLayouts         = (isInput ? layouts.inputBuses  : layouts.outputBuses);
             auto& oppositeRequestedLayouts = (isInput ? layouts.outputBuses : layouts.inputBuses);
-            auto& supported                = (isInput ? supportedInLayouts : supportedOutLayouts);
             const int n = getBusCount (isInput);
 
             for (int busIdx = 0; busIdx < n; ++busIdx)
@@ -744,7 +743,6 @@ public:
                 const int oppositeBusIdx = jmin (getBusCount (! isInput) - 1, busIdx);
                 const bool hasOppositeBus = (oppositeBusIdx >= 0);
                 auto oppositeRequested = (hasOppositeBus ? oppositeRequestedLayouts.getReference (oppositeBusIdx) : AudioChannelSet());
-                auto& possible = supported.getReference (busIdx);
 
                 if (requested.isDisabled())
                   return false;
@@ -755,6 +753,9 @@ public:
                 // Some plugins use defined layouts and also channelLayouts, so may support (0,-32) but do not supply full channelInfos
                 // defineing CHANNELS_ONLY will use the channelInfo only and not just base it on the layouts
 
+                auto& supported = (isInput ? supportedInLayouts : supportedOutLayouts);
+                auto& possible  = supported.getReference (busIdx);
+              
                 if (possible.size() > 0 && ! possible.contains (requested))
                     return false;
 #endif
@@ -1488,7 +1489,7 @@ public:
         }
     }
 
-    void refreshParameterList() override
+    bool refreshParameterList() override
     {
         paramIDToIndex.clear();
         AudioProcessorParameterGroup newParameterTree;
@@ -1502,7 +1503,7 @@ public:
             haveParameterList = (paramListSize > 0 && err == noErr);
 
             if (! haveParameterList)
-                return;
+                return false;
 
             if (paramListSize > 0)
             {
@@ -1636,23 +1637,32 @@ public:
             }
         }
 
-        setParameterTree (std::move (newParameterTree));
-      
-        // ok here we have the flatparameterlist with its wonky indexing so we need to fixup paramIDToIndex to match it
-        paramIDToIndex.clear();
-        auto parameters = getParameters();
-        for(auto param : getParameters())
+        if(newParameterTree.differentTo(getParameterTree()))
         {
-          paramIDToIndex.getReference (param->getOrigParameterIndex()) = param->getParameterIndex();  
+            setParameterTree (std::move (newParameterTree));
+          
+            // ok here we have the flatparameterlist with its wonky indexing so we need to fixup paramIDToIndex to match it
+            paramIDToIndex.clear();
+            auto parameters = getParameters();
+            for(auto param : getParameters())
+            {
+              paramIDToIndex.getReference ((uint32_t)param->getOrigParameterIndex()) = (size_t)param->getParameterIndex();
+            }
+          
+            UInt32 propertySize = 0;
+            Boolean writable = false;
+          
+            auSupportsBypass = (AudioUnitGetPropertyInfo (audioUnit, kAudioUnitProperty_BypassEffect,
+                                                          kAudioUnitScope_Global, 0, &propertySize, &writable) == noErr
+                                && propertySize >= sizeof (UInt32) && writable);
+            bypassParam.reset (new AUBypassParameter (*this));
+          
+            return true;
         }
-        
-        UInt32 propertySize = 0;
-        Boolean writable = false;
+        else
+            return false;
 
-        auSupportsBypass = (AudioUnitGetPropertyInfo (audioUnit, kAudioUnitProperty_BypassEffect,
-                                                     kAudioUnitScope_Global, 0, &propertySize, &writable) == noErr
-                              && propertySize >= sizeof (UInt32) && writable);
-        bypassParam.reset (new AUBypassParameter (*this));
+      
     }
 
     void updateLatency()
@@ -2340,9 +2350,9 @@ private:
               
                 // we have an issue where juce takes precedence with the channellayouttags, so if the plugin is a bit dodgy and doesn't fill this out correctly
                 // then juce might not have all the layouts supported
-              for(uint32_t uC = 0; uC < numChannelInfos; uC++)
+                for(int nC = 0; nC < numChannelInfos; nC++)
                 {
-                  if( (channelInfos[uC].inChannels < 0) || (channelInfos[uC].outChannels < 0))
+                  if( (channelInfos[nC].inChannels < 0) || (channelInfos[nC].outChannels < 0))
                   {
                     // ok we are variable, from the AU docs:
                     // {–1, –1} indicates that a bus supports any number of input or output channels provided that the input and output channel counts match each other. This is the default configuration for effect units.

@@ -2176,8 +2176,32 @@ private:
   }
   
   //==============================================================================
-  Array<AudioChannelLayoutTag>&       getSupportedBusLayouts (bool isInput, int bus) noexcept       { return (isInput ? supportedInputLayouts : supportedOutputLayouts).getReference (bus); }
-  const Array<AudioChannelLayoutTag>& getSupportedBusLayouts (bool isInput, int bus) const noexcept { return (isInput ? supportedInputLayouts : supportedOutputLayouts).getReference (bus); }
+  Array<AudioChannelLayoutTag>&       getSupportedBusLayouts (bool isInput, int bus) noexcept
+  {
+    // original code fails if dynamic buses have been added
+    auto& layouts = isInput ? supportedInputLayouts : supportedOutputLayouts;
+    if(bus >= layouts.size())
+    {
+      Array<AudioChannelLayoutTag> busLayouts;
+      addSupportedLayoutTagsForBus (isInput, bus, busLayouts);
+      layouts.add(busLayouts);
+    }
+    return (layouts.getReference (bus));
+  }
+  
+//  const Array<AudioChannelLayoutTag>& getSupportedBusLayouts (bool isInput, int bus) const noexcept
+//  {
+//    // original code fails if dynamic buses have been added
+//    auto& layouts = isInput ? supportedInputLayouts : supportedOutputLayouts;
+//    if(bus >= layouts.size())
+//    {
+//      Array<AudioChannelLayoutTag> busLayouts;
+//      addSupportedLayoutTagsForBus (isInput, bus, busLayouts);
+//      layouts.add(busLayouts);
+//    }
+//    return (isInput ? supportedInputLayouts : supportedOutputLayouts).getReference (bus);
+//  }
+  
   AudioChannelLayoutTag& getCurrentLayout (bool isInput, int bus) noexcept               { return (isInput ? currentInputLayout : currentOutputLayout).getReference (bus); }
   AudioChannelLayoutTag  getCurrentLayout (bool isInput, int bus) const noexcept         { return (isInput ? currentInputLayout : currentOutputLayout)[bus]; }
   

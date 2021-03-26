@@ -456,8 +456,8 @@ struct AudioUnitHelpers
         if(bValidSeq)
         {
           AUChannelInfo info;
-          info.inChannels = -maxNumInputs;
-          info.outChannels = -maxNumOutputs;
+          info.inChannels  = (SInt16) -maxNumInputs;
+          info.outChannels = (SInt16) -maxNumOutputs;
           channelInfo.add (info);
         }
         else
