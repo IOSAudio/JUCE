@@ -95,8 +95,26 @@ static bool arrayContainsPlugin (const OwnedArray<PluginDescription>& list,
 struct AutoResizingNSViewComponent  : public ViewComponentBaseClass,
                                       private AsyncUpdater
 {
-    void childBoundsChanged (Component*) override  { triggerAsyncUpdate(); }
-    void handleAsyncUpdate() override              { resizeToFitView(); }
+// ARCRESIZE
+#define IMPROVE_RESIZEING_FOR_AU 1
+#if IMPROVE_RESIZEING_FOR_AU
+    // ARC Improve issue with AU window resizeing
+    void childBoundsChanged (Component*) override
+    {
+        if (MessageManager::getInstance()->isThisTheMessageThread())
+            resizeToFitView();
+        else
+            triggerAsyncUpdate();
+    }
+  
+    void handleAsyncUpdate() override
+    {
+        resizeToFitView();
+    }
+#else
+  void childBoundsChanged (Component*) override  { triggerAsyncUpdate(); }
+  void handleAsyncUpdate() override              { resizeToFitView(); }
+#endif
 };
 
 //==============================================================================
