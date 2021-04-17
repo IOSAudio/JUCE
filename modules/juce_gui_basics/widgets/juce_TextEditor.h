@@ -323,6 +323,10 @@ public:
 
         /** Called when the text editor loses focus. */
         virtual void textEditorFocusLost (TextEditor&) {}
+      
+        /** Called when the text editor loses focus. */
+        virtual void textEditorFocusGained (TextEditor&) {}
+
     };
 
     /** Registers a listener to be told when things happen to the text.
@@ -347,6 +351,9 @@ public:
 
     /** You can assign a lambda to this callback object to have it called when the editor loses key focus. */
     std::function<void()> onFocusLost;
+
+    /** You can assign a lambda to this callback object to have it called when the editor gains key focus. */
+    std::function<void()> onFocusGained;
 
     //==============================================================================
     /** Returns the entire contents of the editor. */
