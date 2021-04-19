@@ -3394,6 +3394,8 @@ JUCE_EXPORTED_FUNCTION IPluginFactory* PLUGIN_API GetPluginFactory()
     FUID *pCcIid = (FUID *)&JuceVST3EditController::iid;
     *pCcIid = FUID::fromTUID(ccTuid);
   }
+  else
+    memcpy(pgGuid, aeFuid, 16);
   
   
   if (globalFactory == nullptr)
