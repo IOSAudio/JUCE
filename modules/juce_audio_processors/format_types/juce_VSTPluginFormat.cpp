@@ -1761,7 +1761,9 @@ struct VSTPluginInstance     : public AudioPluginInstance,
 
         auto set = (const fxSet*) data;
 
-        if ((! compareMagic (set->chunkMagic, "CcnK")) || fxbSwap (set->version) > fxbVersionNum)
+        // Don't check version
+        // if ((! compareMagic (set->chunkMagic, "CcnK")) || fxbSwap (set->version) > fxbVersionNum)
+        if (! compareMagic (set->chunkMagic, "CcnK"))
             return false;
 
         if (compareMagic (set->fxMagic, "FxBk"))
