@@ -1491,7 +1491,7 @@ public:
 
     bool refreshParameterList() override
     {
-        paramIDToIndex.clear();
+        //paramIDToIndex.clear();
         AudioProcessorParameterGroup newParameterTree;
 
         if (audioUnit != nullptr)
@@ -1527,7 +1527,7 @@ public:
                                               kAudioUnitScope_Global,
                                               ids[i], &info, &sz) == noErr)
                     {
-                        paramIDToIndex.getReference (ids[i]) = i;
+                        //paramIDToIndex.getReference (ids[i]) = i;
                         String paramName;
 
                         if ((info.flags & kAudioUnitParameterFlag_HasCFNameString) != 0)
@@ -1646,6 +1646,7 @@ public:
             auto parameters = getParameters();
             for(auto param : getParameters())
             {
+              printf("paramIdToIndex[%u] = %u\n", (uint32_t)param->getOrigParameterIndex(), (uint32_t)param->getParameterIndex());
               paramIDToIndex.getReference ((uint32_t)param->getOrigParameterIndex()) = (size_t)param->getParameterIndex();
             }
           
