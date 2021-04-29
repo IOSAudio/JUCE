@@ -1130,6 +1130,7 @@ public:
         @see setCurrentProgramStateInformation
     */
     virtual void setStateInformation (const void* data, int sizeInBytes) = 0;
+    virtual void setStateInformationWithProgramName (const void* data, int sizeInBytes, String sProgramName) { setStateInformation(data, sizeInBytes); };
 
     /** The host will call this method if it wants to restore the state of just the processor's
         current program.
