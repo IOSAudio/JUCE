@@ -441,9 +441,9 @@ struct AudioUnitHelpers
       
         bool bValidSeq = true;
         int nIndex = 0;
-        for(int input = 1; bValidSeq and input <= maxNumInputs; input++)
+        for(int input = hasMainInputBus ? 1 : 0; bValidSeq and input <= maxNumInputs; input++)
         {
-          for(int output = 1; bValidSeq && output <= maxNumOutputs; output++)
+          for(int output = hasMainOutputBus ? 1 : 0; bValidSeq && output <= maxNumOutputs; output++)
           {
             int n = ((input << 16) + output);
             if(supportedChannels[nIndex] != n)
