@@ -1413,7 +1413,7 @@ public:
 
     void changeProgramName (int /*index*/, const String& /*newName*/) override
     {
-        jassertfalse; // xxx not implemented!
+        //jassertfalse; // xxx not implemented!
     }
 
     //==============================================================================
