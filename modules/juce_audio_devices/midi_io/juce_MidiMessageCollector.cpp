@@ -51,7 +51,7 @@ void MidiMessageCollector::addMessageToQueue (const MidiMessage& message)
     const ScopedLock sl (midiCallbackLock);
 
    #if JUCE_DEBUG
-    jassert (hasCalledReset); // you need to call reset() to set the correct sample rate before using this object
+    //jassert (hasCalledReset); // you need to call reset() to set the correct sample rate before using this object
    #endif
 
     // the messages that come in here need to be time-stamped correctly - see MidiInput
