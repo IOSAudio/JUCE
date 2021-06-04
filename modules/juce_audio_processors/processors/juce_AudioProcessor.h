@@ -872,6 +872,10 @@ public:
       { return -1; }
 #endif
   
+    virtual void setChannelNumber(int32_t nChannelNumber) {};
+    virtual void setChannelSelected(bool bChannelSelected) {};
+    virtual void setChannelFocused(bool bChannelFocused) {};
+
     //==============================================================================
     /** This returns a critical section that will automatically be locked while the host
         is calling the processBlock() method.

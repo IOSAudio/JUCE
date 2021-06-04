@@ -22,6 +22,7 @@
 
   ==============================================================================
 */
+#pragma clang diagnostic ignored "-Wnon-virtual-dtor"
 
 #include <juce_core/system/juce_CompilerWarnings.h>
 #include <juce_core/system/juce_TargetPlatform.h>
@@ -50,6 +51,15 @@
 #include "../utility/juce_FakeMouseMoveGenerator.h"
 #include <juce_audio_processors/format_types/juce_LegacyAudioParameter.cpp>
 #include <juce_audio_processors/format_types/juce_VST3Common.h>
+#include <juce_audio_processors/format_types/pslextensions/pslvst2extensions.h>
+#include <juce_audio_processors/format_types/pslextensions/ipslgainreduction.h>
+#include <juce_audio_processors/format_types/pslextensions/ipslcontextinfo.h>
+#include <juce_audio_processors/format_types/pslextensions/ipsleditcontroller.h>
+
+DEF_CLASS_IID(Presonus::IGainReductionInfo)
+DEF_CLASS_IID (Presonus::IContextInfoHandler)
+DEF_CLASS_IID (Presonus::IContextInfoHandler2)
+DEF_CLASS_IID (Presonus::IContextInfoProvider)
 
 #ifndef JUCE_VST3_CAN_REPLACE_VST2
  #define JUCE_VST3_CAN_REPLACE_VST2 1
@@ -361,7 +371,11 @@ class JuceVST3EditController : public Vst::EditController,
                                public Vst::IUnitInfo,
                                public Vst::ChannelContext::IInfoListener,
                                public AudioProcessorListener,
-                               private AudioProcessorParameter::Listener
+                               private AudioProcessorParameter::Listener,
+                               public Presonus::IGainReductionInfo,
+                               public Presonus::IContextInfoHandler,
+                               public Presonus::IContextInfoHandler2
+
 {
 public:
     JuceVST3EditController (Vst::IHostApplication* host)
@@ -393,6 +407,14 @@ public:
         TEST_FOR_COMMON_BASE_AND_RETURN_IF_VALID (targetIID, IPluginBase, Vst::IEditController)
         TEST_FOR_COMMON_BASE_AND_RETURN_IF_VALID (targetIID, IDependent, Vst::IEditController)
         TEST_FOR_COMMON_BASE_AND_RETURN_IF_VALID (targetIID, FUnknown, Vst::IEditController)
+
+        TEST_FOR_AND_RETURN_IF_VALID (targetIID, Presonus::IContextInfoHandler)
+        TEST_FOR_AND_RETURN_IF_VALID (targetIID, Presonus::IContextInfoHandler2)
+
+        if (metersParamIDs.size() > 0)
+        {
+          TEST_FOR_AND_RETURN_IF_VALID (targetIID, Presonus::IGainReductionInfo)
+        }
 
         if (doUIDsMatch (targetIID, JuceAudioProcessor::iid))
         {
@@ -431,7 +453,78 @@ public:
 
         return EditController::terminate();
     }
+  
 
+    void PLUGIN_API notifyContextInfoChange() override
+    {
+      printf("notifyContextInfoChange\n");
+      
+      // interested in index, selected, focused
+      FUnknownPtr<Presonus::IContextInfoProvider> contextInfoProvider (componentHandler);
+      AudioProcessor *pAudioProcessor = getPluginInstance();
+      if(contextInfoProvider && pAudioProcessor)
+      {
+        int32 channelIndex = 0;
+        contextInfoProvider->getContextInfoValue (channelIndex, Presonus::ContextInfo::kIndex);
+        pAudioProcessor->setChannelNumber(channelIndex);
+        
+        int32 selected = 0;
+        contextInfoProvider->getContextInfoValue (selected, Presonus::ContextInfo::kSelected);
+        pAudioProcessor->setChannelSelected(selected == 1);
+        
+        int32 focused = 0;
+        contextInfoProvider->getContextInfoValue (focused, Presonus::ContextInfo::kFocused);
+        pAudioProcessor->setChannelFocused(focused == 1);
+      }
+    }
+  
+    void PLUGIN_API notifyContextInfoChange (Steinberg::FIDString id) override
+    {
+      printf("notifyContextInfoChange with id (%s)\n", id);
+      FUnknownPtr<Presonus::IContextInfoProvider> contextInfoProvider (componentHandler);
+      AudioProcessor *pAudioProcessor = getPluginInstance();
+      if(contextInfoProvider && pAudioProcessor)
+      {
+        if(FIDStringsEqual(id, Presonus::ContextInfo::kIndex))
+        {
+          int32 channelIndex = 0;
+          contextInfoProvider->getContextInfoValue (channelIndex, Presonus::ContextInfo::kIndex);
+          pAudioProcessor->setChannelNumber(channelIndex);
+        }
+
+        if(FIDStringsEqual(id, Presonus::ContextInfo::kSelected))
+        {
+          int32 selected = 0;
+          contextInfoProvider->getContextInfoValue (selected, Presonus::ContextInfo::kSelected);
+          pAudioProcessor->setChannelSelected(selected == 1);
+        }
+        
+        if(FIDStringsEqual(id, Presonus::ContextInfo::kFocused))
+        {
+          int32 focused = 0;
+          contextInfoProvider->getContextInfoValue (focused, Presonus::ContextInfo::kFocused);
+          pAudioProcessor->setChannelFocused(focused == 1);
+        }
+      }
+    }
+  
+    double PLUGIN_API getGainReductionValueInDb() override
+    {
+      double gainReduction = 1.0;
+      bool hasGRMeter = false;
+      for (int i = 0; i < metersParamIDs.size(); ++i)
+      {
+        // sum gain reduction meters only
+        auto category = getPluginInstance()->getParameterCategory(i);
+        if (category == AudioProcessorParameter::Category::compressorLimiterGainReductionMeter || category == AudioProcessorParameter::Category::expanderGateGainReductionMeter)
+        {
+          gainReduction *= getPluginInstance()->getParameter(metersParamIDs[i]);
+          hasGRMeter = true;
+        }
+      }
+      return hasGRMeter ? Decibels::gainToDecibels(1.0 - jmin(1.0,gainReduction)) : 0;
+    }
+  
     //==============================================================================
     struct Param  : public Vst::Parameter
     {
@@ -994,6 +1087,8 @@ private:
     MidiController parameterToMidiController[(int) numMIDIChannels * (int) Vst::kCountCtrlNumber];
     Vst::ParamID midiControllerToParameter[numMIDIChannels][Vst::kCountCtrlNumber];
 
+    Array<int> metersParamIDs;
+  
     //==============================================================================
     std::atomic<bool> vst3IsPlaying     { false },
                       inSetupProcessing { false };
@@ -1028,6 +1123,12 @@ private:
 
                     parameters.addParameter (new Param (*this, *juceParam, vstParamID, unitID,
                                                         (vstParamID == audioProcessor->bypassParamID)));
+                  
+                    // is this a meter?
+                    if (((pluginInstance->getParameterCategory(i) & 0xffff0000) >> 16) == 2)
+                    {
+                      metersParamIDs.add (i);
+                    }
                 }
 
                 if (pluginInstance->getNumPrograms() > 1)
