@@ -461,20 +461,27 @@ public:
       
       // interested in index, selected, focused
       FUnknownPtr<Presonus::IContextInfoProvider> contextInfoProvider (componentHandler);
-      AudioProcessor *pAudioProcessor = getPluginInstance();
-      if(contextInfoProvider && pAudioProcessor)
+      AudioProcessor *instance = getPluginInstance();
+      if(contextInfoProvider && instance)
       {
-        int32 channelIndex = 0;
-        contextInfoProvider->getContextInfoValue (channelIndex, Presonus::ContextInfo::kIndex);
-        pAudioProcessor->setChannelNumber(channelIndex);
+        AudioProcessor::TrackProperties trackProperties;
+
+        //contextInfoProvider->getContextInfoValue (trackProperties.channelIndex, Presonus::ContextInfo::kIndex);
         
-        int32 selected = 0;
-        contextInfoProvider->getContextInfoValue (selected, Presonus::ContextInfo::kSelected);
-        pAudioProcessor->setChannelSelected(selected == 1);
+        int32 isFocused;
+        int32 isSelected;
         
-        int32 focused = 0;
-        contextInfoProvider->getContextInfoValue (focused, Presonus::ContextInfo::kFocused);
-        pAudioProcessor->setChannelFocused(focused == 1);
+        contextInfoProvider->getContextInfoValue (isSelected, Presonus::ContextInfo::kSelected);
+        contextInfoProvider->getContextInfoValue (isFocused, Presonus::ContextInfo::kFocused);
+        
+        trackProperties.isFocused  = (AudioProcessor::TrackProperties::TriStateBool)(isFocused  == 1);
+        trackProperties.isSelected = (AudioProcessor::TrackProperties::TriStateBool)(isSelected == 1);
+
+        if (MessageManager::getInstance()->isThisTheMessageThread())
+          instance->updateTrackProperties (trackProperties);
+        else
+          MessageManager::callAsync ([trackProperties, instance]
+                                     { instance->updateTrackProperties (trackProperties); });
       }
     }
   
@@ -482,28 +489,43 @@ public:
     {
       printf("notifyContextInfoChange with id (%s)\n", id);
       FUnknownPtr<Presonus::IContextInfoProvider> contextInfoProvider (componentHandler);
-      AudioProcessor *pAudioProcessor = getPluginInstance();
-      if(contextInfoProvider && pAudioProcessor)
-      {
-        if(FIDStringsEqual(id, Presonus::ContextInfo::kIndex))
-        {
-          int32 channelIndex = 0;
-          contextInfoProvider->getContextInfoValue (channelIndex, Presonus::ContextInfo::kIndex);
-          pAudioProcessor->setChannelNumber(channelIndex);
-        }
+      AudioProcessor *instance = getPluginInstance();
 
+      if(contextInfoProvider && instance)
+      {
+        AudioProcessor::TrackProperties trackProperties;
+
+//        if(FIDStringsEqual(id, Presonus::ContextInfo::kIndex))
+//        {
+//          int32 channelIndex = 0;
+//          contextInfoProvider->getContextInfoValue (channelIndex, Presonus::ContextInfo::kIndex);
+//          pAudioProcessor->setChannelNumber(channelIndex);
+//        }
+
+        bool bSendUpdate = false;
         if(FIDStringsEqual(id, Presonus::ContextInfo::kSelected))
         {
-          int32 selected = 0;
-          contextInfoProvider->getContextInfoValue (selected, Presonus::ContextInfo::kSelected);
-          pAudioProcessor->setChannelSelected(selected == 1);
+          int32 isSelected;
+          contextInfoProvider->getContextInfoValue (isSelected, Presonus::ContextInfo::kSelected);
+          trackProperties.isSelected = (AudioProcessor::TrackProperties::TriStateBool)(isSelected == 1);
+          bSendUpdate = true;
         }
         
         if(FIDStringsEqual(id, Presonus::ContextInfo::kFocused))
         {
-          int32 focused = 0;
-          contextInfoProvider->getContextInfoValue (focused, Presonus::ContextInfo::kFocused);
-          pAudioProcessor->setChannelFocused(focused == 1);
+          int32 isFocused;
+          contextInfoProvider->getContextInfoValue (isFocused, Presonus::ContextInfo::kFocused);
+          trackProperties.isFocused = (AudioProcessor::TrackProperties::TriStateBool)(isFocused == 1);
+          bSendUpdate = true;
+        }
+        
+        if(bSendUpdate)
+        {
+          if (MessageManager::getInstance()->isThisTheMessageThread())
+            instance->updateTrackProperties (trackProperties);
+          else
+            MessageManager::callAsync ([trackProperties, instance]
+                                       { instance->updateTrackProperties (trackProperties); });
         }
       }
     }
@@ -741,8 +763,23 @@ public:
                                                          Vst::ChannelContext::GetBlue ((uint32) colour), Vst::ChannelContext::GetAlpha ((uint32) colour));
                 }
 
+                {
+                  int64 channelIndex;
+                  if (list->getInt (Vst::ChannelContext::kChannelIndexKey, channelIndex) == kResultTrue)
+                  {
+                    trackProperties.trackNumber = channelIndex;
+                  }
+                }
 
+                {
+                  int64 pluginLocation;
+                  if (list->getInt (Vst::ChannelContext::kChannelPluginLocationKey, pluginLocation) == kResultTrue)
+                  {
+                    trackProperties.pluginLocation = pluginLocation;
+                  }
+                }
 
+              
                 if (MessageManager::getInstance()->isThisTheMessageThread())
                     instance->updateTrackProperties (trackProperties);
                 else

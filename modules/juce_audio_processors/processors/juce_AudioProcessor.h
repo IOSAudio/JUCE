@@ -871,10 +871,6 @@ public:
 #else
       { return -1; }
 #endif
-  
-    virtual void setChannelNumber(int32_t nChannelNumber) {};
-    virtual void setChannelSelected(bool bChannelSelected) {};
-    virtual void setChannelFocused(bool bChannelFocused) {};
 
     //==============================================================================
     /** This returns a critical section that will automatically be locked while the host
@@ -1257,9 +1253,14 @@ public:
         AudioProcessor is loaded. */
     struct TrackProperties
     {
+        typedef enum {tsbTrue, tsbFalse, tsbNull} TriStateBool;
+      
         String name;    // The name of the track - this will be empty if the track name is not known
         Colour colour;  // The colour of the track - this will be transparentBlack if the colour is not known
-
+        int64  trackNumber = -1;
+        int64  pluginLocation = -1;
+        TriStateBool   isSelected = tsbNull;
+        TriStateBool   isFocused = tsbNull;
         // other properties may be added in the future
     };
 
