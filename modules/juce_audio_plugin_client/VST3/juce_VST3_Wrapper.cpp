@@ -468,8 +468,8 @@ public:
 
         //contextInfoProvider->getContextInfoValue (trackProperties.channelIndex, Presonus::ContextInfo::kIndex);
         
-        int32 isFocused;
-        int32 isSelected;
+				Steinberg::int32 isFocused;
+				Steinberg::int32 isSelected;
         
         contextInfoProvider->getContextInfoValue (isSelected, Presonus::ContextInfo::kSelected);
         contextInfoProvider->getContextInfoValue (isFocused, Presonus::ContextInfo::kFocused);
@@ -505,7 +505,7 @@ public:
         bool bSendUpdate = false;
         if(FIDStringsEqual(id, Presonus::ContextInfo::kSelected))
         {
-          int32 isSelected;
+          Steinberg::int32 isSelected;
           contextInfoProvider->getContextInfoValue (isSelected, Presonus::ContextInfo::kSelected);
           trackProperties.isSelected = (AudioProcessor::TrackProperties::TriStateBool)(isSelected == 1);
           bSendUpdate = true;
@@ -513,7 +513,7 @@ public:
         
         if(FIDStringsEqual(id, Presonus::ContextInfo::kFocused))
         {
-          int32 isFocused;
+          Steinberg::int32 isFocused;
           contextInfoProvider->getContextInfoValue (isFocused, Presonus::ContextInfo::kFocused);
           trackProperties.isFocused = (AudioProcessor::TrackProperties::TriStateBool)(isFocused == 1);
           bSendUpdate = true;
@@ -3472,8 +3472,8 @@ using namespace juce;
 extern char     pgCommsMem[1024+8];
 extern int      *pgChildID;
 extern int      *pgCategory;
-extern char     *sgOrigVst;
-extern char     *sgName;
+extern const char     *sgOrigVst;
+extern const char     *sgName;
 extern char     *pgCategoryName;
 extern uint8_t  *pgGuid;
 
@@ -3533,7 +3533,7 @@ JUCE_EXPORTED_FUNCTION IPluginFactory* PLUGIN_API GetPluginFactory()
     *pCcIid = FUID::fromTUID(ccTuid);
   }
   else
-    memcpy(pgGuid, aeFuid, 16);
+    memcpy((void *)pgGuid, aeFuid, 16);
   
   
   if (globalFactory == nullptr)
