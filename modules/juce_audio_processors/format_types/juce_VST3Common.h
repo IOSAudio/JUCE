@@ -946,7 +946,7 @@ public:
     return __funknownRefCount;
   }
   
-  Steinberg::tresult queryInterface (const char* iid, void** obj) SMTG_OVERRIDE
+  Steinberg::tresult STDMETHODCALLTYPE queryInterface (const char* iid, void** obj) SMTG_OVERRIDE
   {
     if(Steinberg::kNoInterface == Steinberg::MemoryStream::queryInterface(iid, obj))
     {
