@@ -98,6 +98,9 @@ inline Steinberg::Vst::TChar* toString (const juce::String& source) noexcept
  static const Steinberg::FIDString defaultVST3WindowType = Steinberg::kPlatformTypeX11EmbedWindowID;
 #endif
 
+#ifndef STDMETHODCALLTYPE
+  #define STDMETHODCALLTYPE
+#endif
 
 //==============================================================================
 static inline Steinberg::Vst::SpeakerArrangement getArrangementForBus (Steinberg::Vst::IAudioProcessor* processor,
@@ -945,7 +948,7 @@ public:
     }
     return __funknownRefCount;
   }
-  
+
   Steinberg::tresult STDMETHODCALLTYPE queryInterface (const char* iid, void** obj) SMTG_OVERRIDE
   {
     if(Steinberg::kNoInterface == Steinberg::MemoryStream::queryInterface(iid, obj))
