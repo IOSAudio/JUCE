@@ -291,7 +291,7 @@ public:
     void resized() override
     {
         auto area = getLocalBounds();
-
+      
         typeBox.setBounds (area.removeFromTop (36).removeFromRight (150).reduced (8));
         codeDocumentComponent.setBounds (area.removeFromTop(area.getHeight() / 2).reduced (8));
         resultsTree          .setBounds (area.reduced (8));
@@ -343,6 +343,7 @@ private:
         errorMessage.setVisible (! errorMessage.isEmpty());
 
         resultsTree.setRootItem (rootItem.get());
+      resultsTree.setRootItemVisible(false);
     }
 
     /** Parses the editor's contents as XML. */

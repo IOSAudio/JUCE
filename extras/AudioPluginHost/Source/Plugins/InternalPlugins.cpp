@@ -85,7 +85,7 @@ public:
     bool isMidiEffect() const override                                            { return inner->isMidiEffect(); }
     void reset() override                                                         { inner->reset(); }
     void setNonRealtime (bool b) noexcept override                                { inner->setNonRealtime (b); }
-    void refreshParameterList() override                                          { inner->refreshParameterList(); }
+    bool refreshParameterList() override                                          { return inner->refreshParameterList(); }
     void numChannelsChanged() override                                            { inner->numChannelsChanged(); }
     void numBusesChanged() override                                               { inner->numBusesChanged(); }
     void processorLayoutsChanged() override                                       { inner->processorLayoutsChanged(); }

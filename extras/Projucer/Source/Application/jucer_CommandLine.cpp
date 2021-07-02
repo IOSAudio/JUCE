@@ -30,7 +30,7 @@
 #include "jucer_CommandLine.h"
 
 //==============================================================================
-const char* preferredLineFeed = "\r\n";
+const char* preferredLineFeed = "\n";
 const char* getPreferredLineFeed()     { return preferredLineFeed; }
 
 //==============================================================================

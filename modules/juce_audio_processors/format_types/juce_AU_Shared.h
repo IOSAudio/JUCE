@@ -124,6 +124,7 @@ struct AudioUnitHelpers
         //==============================================================================
         void prepare (int inChannels, int outChannels, int maxFrames)
         {
+            printf("PREPARE %d, %d, %d\n", inChannels, outChannels, maxFrames);
             const int numChannels = jmax (inChannels, outChannels);
 
             scratch.setSize (numChannels, maxFrames);
@@ -333,7 +334,7 @@ struct AudioUnitHelpers
     static Array<AUChannelInfo> getAUChannelInfo (const AudioProcessor& processor)
     {
         Array<AUChannelInfo> channelInfo;
-
+      
         auto hasMainInputBus  = (AudioUnitHelpers::getBusCount (&processor, true)  > 0);
         auto hasMainOutputBus = (AudioUnitHelpers::getBusCount (&processor, false) > 0);
 
@@ -348,7 +349,11 @@ struct AudioUnitHelpers
         }
 
         auto layout = processor.getBusesLayout();
-        auto maxNumChanToCheckFor = 9;
+      
+        // ARCCHANNELS AUChannelinfos can be larger than 8, with this set to 9 any plugin that has more than 8 channels gets marked as "-1"
+        // There are plugins with more than 9 channels
+        //auto maxNumChanToCheckFor = 9;
+        auto maxNumChanToCheckFor = 65;
 
         auto defaultInputs  = processor.getChannelCountOfBus (true,  0);
         auto defaultOutputs = processor.getChannelCountOfBus (false, 0);
@@ -418,30 +423,69 @@ struct AudioUnitHelpers
             }
         }
 
-        for (auto supported : supportedChannels)
+        // lets check we have sequential sets of ins and outs
+        // this is needed for dynamic bus plugins as usually a single channel map will mean
+        // maximum channels across all buses
+        // use the existing juce set data
+        int maxNumInputs = 0;
+        int maxNumOutputs = 0;
+      
+        for(int supported : supportedChannels)
         {
-            auto numInputs  = (supported >> 16) & 0xffff;
-            auto numOutputs = (supported >> 0)  & 0xffff;
-
-            AUChannelInfo info;
-
-            // see here: https://developer.apple.com/library/mac/documentation/MusicAudio/Conceptual/AudioUnitProgrammingGuide/TheAudioUnit/TheAudioUnit.html
-            info.inChannels  = static_cast<SInt16> (hasMainInputBus  ? (hasUnsupportedInput  ? numInputs :  (hasInOutMismatch && (! hasUnsupportedOutput) ? -2 : -1)) : 0);
-            info.outChannels = static_cast<SInt16> (hasMainOutputBus ? (hasUnsupportedOutput ? numOutputs : (hasInOutMismatch && (! hasUnsupportedInput)  ? -2 : -1)) : 0);
-
-            if (info.inChannels == -2 && info.outChannels == -2)
-                info.inChannels = -1;
-
-            int j;
-            for (j = 0; j < channelInfo.size(); ++j)
-                if (info.inChannels == channelInfo.getReference (j).inChannels
-                      && info.outChannels == channelInfo.getReference (j).outChannels)
-                    break;
-
-            if (j >= channelInfo.size())
-                channelInfo.add (info);
+          int numInputs  = (supported >> 16) & 0xffff;
+          int numOutputs = (supported >> 0)  & 0xffff;
+          
+          maxNumInputs  = std::max(numInputs, maxNumInputs);
+          maxNumOutputs = std::max(numOutputs, maxNumOutputs);
         }
+      
+        bool bValidSeq = true;
+        int nIndex = 0;
+        for(int input = hasMainInputBus ? 1 : 0; bValidSeq and input <= maxNumInputs; input++)
+        {
+          for(int output = hasMainOutputBus ? 1 : 0; bValidSeq && output <= maxNumOutputs; output++)
+          {
+            int n = ((input << 16) + output);
+            if(supportedChannels[nIndex] != n)
+              bValidSeq = false;
+            else
+              nIndex++;
+          }
+        }
+      
+        if(bValidSeq)
+        {
+          AUChannelInfo info;
+          info.inChannels  = (SInt16) -maxNumInputs;
+          info.outChannels = (SInt16) -maxNumOutputs;
+          channelInfo.add (info);
+        }
+        else
+        {
+          for (auto supported : supportedChannels)
+          {
+              auto numInputs  = (supported >> 16) & 0xffff;
+              auto numOutputs = (supported >> 0)  & 0xffff;
 
+              AUChannelInfo info;
+
+              // see here: https://developer.apple.com/library/mac/documentation/MusicAudio/Conceptual/AudioUnitProgrammingGuide/TheAudioUnit/TheAudioUnit.html
+              info.inChannels  = static_cast<SInt16> (hasMainInputBus  ? (hasUnsupportedInput  ? numInputs :  (hasInOutMismatch && (! hasUnsupportedOutput) ? -2 : -1)) : 0);
+              info.outChannels = static_cast<SInt16> (hasMainOutputBus ? (hasUnsupportedOutput ? numOutputs : (hasInOutMismatch && (! hasUnsupportedInput)  ? -2 : -1)) : 0);
+
+              if (info.inChannels == -2 && info.outChannels == -2)
+                  info.inChannels = -1;
+
+              int j;
+              for (j = 0; j < channelInfo.size(); ++j)
+                  if (info.inChannels == channelInfo.getReference (j).inChannels
+                        && info.outChannels == channelInfo.getReference (j).outChannels)
+                      break;
+
+              if (j >= channelInfo.size())
+                  channelInfo.add (info);
+          }
+        }
         return channelInfo;
     }
 

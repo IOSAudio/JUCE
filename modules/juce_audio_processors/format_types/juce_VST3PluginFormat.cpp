@@ -2436,7 +2436,12 @@ public:
     //==============================================================================
     int getNumPrograms() override                        { return programNames.size(); }
     const String getProgramName (int index) override     { return index >= 0 ? programNames[index] : String(); }
-    void changeProgramName (int, const String&) override {}
+    void changeProgramName (int, const String &programName) override
+    {
+      MemoryBlock state;
+      getStateInformation(state);
+      setStateInformationWithProgramName(state.getData(), (int)state.getSize(), programName);
+    }
 
     int getCurrentProgram() override
     {
@@ -2506,6 +2511,37 @@ public:
                     editController->setState (controllerStream);
             }
         }
+    }
+
+    void setStateInformationWithProgramName (const void* data, int sizeInBytes, String sProgramName) override
+    {
+      if (auto head = AudioProcessor::getXmlFromBinary (data, sizeInBytes))
+      {
+        auto componentStream (createVST3MemoryStreamForState (*head, "IComponent"));
+        if (componentStream != nullptr && holder->component != nullptr)
+        {
+          componentStream->setProgramName(sProgramName);
+          holder->component->setState (componentStream);
+        }
+        
+        if (editController != nullptr)
+        {
+          if (componentStream != nullptr)
+          {
+            int64 result;
+            componentStream->seek (0, IBStream::kIBSeekSet, &result);
+            editController->setComponentState (componentStream);
+          }
+          
+          auto controllerStream (createVST3MemoryStreamForState (*head, "IEditController"));
+          
+          if (controllerStream != nullptr)
+          {
+            controllerStream->setProgramName(sProgramName);
+            editController->setState (controllerStream);
+          }
+        }
+      }
     }
 
     bool setStateFromPresetFile (const MemoryBlock& rawData)
@@ -2735,6 +2771,24 @@ private:
         return nullptr;
     }
 
+    static ComSmartPtr<VST3MemoryStream> createVST3MemoryStreamForState (XmlElement& head, StringRef identifier)
+    {
+      if (auto* state = head.getChildByName (identifier))
+      {
+        MemoryBlock mem;
+        
+        if (mem.fromBase64Encoding (state->getAllSubText()))
+        {
+          ComSmartPtr<VST3MemoryStream> stream (new VST3MemoryStream(), false);
+          stream->setSize ((TSize) mem.getSize());
+          mem.copyTo (stream->getData(), 0, mem.getSize());
+          return stream;
+        }
+      }
+      
+      return nullptr;
+    }
+
     ComSmartPtr<ParamValueQueueList> inputParameterChanges, outputParameterChanges;
     ComSmartPtr<MidiEventList> midiInputs, midiOutputs;
     Vst::ProcessContext timingInfo; //< Only use this in processBlock()!
@@ -2756,7 +2810,7 @@ private:
         }
     }
 
-    void refreshParameterList() override
+    bool refreshParameterList() override
     {
         AudioProcessorParameterGroup newParameterTree;
 
@@ -2788,7 +2842,7 @@ private:
             if ((paramInfo.flags & Vst::ParameterInfo::kIsBypass) != 0)
                 bypassParam = param;
 
-            param->setOrigParameterIndex(paramInfo.id);
+            param->setOrigParameterIndex((int)paramInfo.id);
 
             std::function<AudioProcessorParameterGroup*(Vst::UnitID)> findOrCreateGroup;
             findOrCreateGroup = [&groupMap, &infoMap, &findOrCreateGroup] (Vst::UnitID groupID)
@@ -2818,7 +2872,13 @@ private:
             group->addChild (std::unique_ptr<AudioProcessorParameter> (param));
         }
 
-        setParameterTree (std::move (newParameterTree));
+        if(newParameterTree.differentTo(getParameterTree()))
+        {
+            setParameterTree (std::move (newParameterTree));
+            return true;
+        }
+        else
+            return false;
     }
 
     void synchroniseStates()
@@ -3284,7 +3344,7 @@ int VST3HostContext::getIndexOfParamID (Vst::ParamID paramID)
       
         for (int i = 0; i < parameters.size(); ++i)
         {
-            paramToIndexMap[parameters[i]->getOrigParameterIndex()] = i;
+            paramToIndexMap[(Vst::ParamID)parameters[i]->getOrigParameterIndex()] = i;
         }
         result = getMappedParamID (paramID);
 

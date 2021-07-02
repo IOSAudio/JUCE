@@ -28,15 +28,15 @@
 /** Somewhere in the codebase of your plugin, you need to implement this function
     and make it return a new instance of the filter subclass that you're building.
 */
-juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter();
+juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter(juce::AudioProcessor::WrapperType type, void *pData);
 
 namespace juce
 {
 
-inline AudioProcessor* JUCE_API JUCE_CALLTYPE createPluginFilterOfType (AudioProcessor::WrapperType type)
+inline AudioProcessor* JUCE_API JUCE_CALLTYPE createPluginFilterOfType (AudioProcessor::WrapperType type, void *pData = nullptr)
 {
     AudioProcessor::setTypeOfNextNewPlugin (type);
-    AudioProcessor* const pluginInstance = ::createPluginFilter();
+    AudioProcessor* const pluginInstance = ::createPluginFilter(type, pData);
     AudioProcessor::setTypeOfNextNewPlugin (AudioProcessor::wrapperType_Undefined);
 
     // your createPluginFilter() method must return an object!

@@ -844,7 +844,8 @@ struct VSTPluginInstance     : public AudioPluginInstance,
                       int numParamSteps,
                       bool isBoolSwitch,
                       const StringArray& paramValueStrings,
-                      const VSTXMLInfo::ValueType* paramValueType)
+                      const VSTXMLInfo::ValueType* paramValueType,
+                      int paramIndex)
             : pluginInstance (parent),
               name (paramName),
               shortNames (shortParamNames),
@@ -857,6 +858,7 @@ struct VSTPluginInstance     : public AudioPluginInstance,
               vstValueStrings (paramValueStrings),
               valueType (paramValueType)
         {
+          setOrigParameterIndex(paramIndex);
         }
 
         float getValue() const override
@@ -1004,7 +1006,7 @@ struct VSTPluginInstance     : public AudioPluginInstance,
         setRateAndBufferSizeDetails (sampleRateToUse, blockSizeToUse);
     }
 
-    void refreshParameterList() override
+    bool refreshParameterList() override
     {
         AudioProcessorParameterGroup newParameterTree;
 
@@ -1074,10 +1076,16 @@ struct VSTPluginInstance     : public AudioPluginInstance,
 
             newParameterTree.addChild (std::make_unique<VSTParameter> (*this, paramName, shortParamNames, defaultValue,
                                                                        label, isAutomatable, isDiscrete, numSteps,
-                                                                       isBoolSwitch, parameterValueStrings, valueType));
+                                                                       isBoolSwitch, parameterValueStrings, valueType, i));
         }
-
-        setParameterTree (std::move (newParameterTree));
+      
+        if(newParameterTree.differentTo(getParameterTree()))
+        {
+          setParameterTree (std::move (newParameterTree));
+          return true;
+        }
+        else
+          return false;
     }
 
     ~VSTPluginInstance() override
@@ -1221,16 +1229,17 @@ struct VSTPluginInstance     : public AudioPluginInstance,
         initialised = true;
 
         setRateAndBufferSizeDetails (initialSampleRate, initialBlockSize);
-
-        dispatch (Vst2::effIdentify, 0, 0, nullptr, 0);
-
-        if (getSampleRate() > 0)
-            dispatch (Vst2::effSetSampleRate, 0, 0, nullptr, (float) getSampleRate());
-
-        if (getBlockSize() > 0)
-            dispatch (Vst2::effSetBlockSize, 0, jmax (32, getBlockSize()), nullptr, 0);
-
-        dispatch (Vst2::effOpen, 0, 0, nullptr, 0);
+      
+      // following code has already been done, multiple effOpens can crash some vsts
+//        dispatch (Vst2::effIdentify, 0, 0, nullptr, 0);
+//
+//        if (getSampleRate() > 0)
+//            dispatch (Vst2::effSetSampleRate, 0, 0, nullptr, (float) getSampleRate());
+//
+//        if (getBlockSize() > 0)
+//            dispatch (Vst2::effSetBlockSize, 0, jmax (32, getBlockSize()), nullptr, 0);
+//
+//        dispatch (Vst2::effOpen, 0, 0, nullptr, 0);
 
         setRateAndBufferSizeDetails (getSampleRate(), getBlockSize());
 
@@ -1752,7 +1761,9 @@ struct VSTPluginInstance     : public AudioPluginInstance,
 
         auto set = (const fxSet*) data;
 
-        if ((! compareMagic (set->chunkMagic, "CcnK")) || fxbSwap (set->version) > fxbVersionNum)
+        // Don't check version
+        // if ((! compareMagic (set->chunkMagic, "CcnK")) || fxbSwap (set->version) > fxbVersionNum)
+        if (! compareMagic (set->chunkMagic, "CcnK"))
             return false;
 
         if (compareMagic (set->fxMagic, "FxBk"))
@@ -1973,6 +1984,16 @@ struct VSTPluginInstance     : public AudioPluginInstance,
 
     std::unique_ptr<VSTPluginFormat::ExtraFunctions> extraFunctions;
     bool usesCocoaNSView = false;
+
+    bool isSynth() const override
+    {
+      return isSynthPlugin();
+    }
+  
+    int32_t getVSTUniqueId() const override
+    {
+      return getUID();
+    }
 
 private:
     //==============================================================================

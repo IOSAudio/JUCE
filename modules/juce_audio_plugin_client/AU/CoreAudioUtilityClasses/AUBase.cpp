@@ -687,7 +687,7 @@ OSStatus			AUBase::DispatchGetProperty(	AudioUnitPropertyID 			inID,
 		break;
 
 	case kAudioUnitProperty_SupportedChannelLayoutTags:
-		{
+		{ 
 			AudioChannelLayoutTag* ptr = outData ? static_cast<AudioChannelLayoutTag*>(outData) : NULL;
 			UInt32 numLayouts = GetChannelLayoutTags (inScope, inElement, ptr);
 			if (numLayouts == 0)

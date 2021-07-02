@@ -26,7 +26,7 @@
 #include "../../Application/jucer_Headers.h"
 
 #ifdef BUILDING_JUCE_COMPILEENGINE
- const char* getPreferredLineFeed() { return "\r\n"; }
+ const char* getPreferredLineFeed() { return "\n"; }
 #endif
 
 //==============================================================================

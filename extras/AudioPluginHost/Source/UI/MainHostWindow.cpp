@@ -40,11 +40,13 @@ public:
     {
         auto deadMansPedalFile = getAppProperties().getUserSettings()
                                    ->getFile().getSiblingFile ("RecentlyCrashedPluginsList");
+      
+        bool bAllowAsync = false; // if true hardly any vst3 plugins validate because juce is creating them and killing them in a thread, unfortunetaly there are still messages for them on the main thread. bang
 
         setContentOwned (new PluginListComponent (pluginFormatManager,
                                                   owner.knownPluginList,
                                                   deadMansPedalFile,
-                                                  getAppProperties().getUserSettings(), true), true);
+                                                  getAppProperties().getUserSettings(), bAllowAsync), true);
 
         setResizable (true, false);
 		// CAD Change START

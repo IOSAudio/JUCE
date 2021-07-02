@@ -94,9 +94,11 @@ JUCE_BEGIN_IGNORE_WARNINGS_GCC_LIKE ("-Wnon-virtual-dtor",
  #include <pluginterfaces/vst/ivstunits.h>
  #include <pluginterfaces/vst/ivstmidicontrollers.h>
  #include <pluginterfaces/vst/ivstchannelcontextinfo.h>
+ #include <pluginterfaces/vst/vstpresetkeys.h>
  #include <public.sdk/source/common/memorystream.h>
  #include <public.sdk/source/vst/vsteditcontroller.h>
  #include <public.sdk/source/vst/vstpresetfile.h>
+ #include <public.sdk/source/vst/hosting/hostclasses.h>
 #else
  // needed for VST_VERSION
  #include <pluginterfaces/vst/vsttypes.h>
@@ -124,6 +126,7 @@ JUCE_BEGIN_IGNORE_WARNINGS_GCC_LIKE ("-Wnon-virtual-dtor",
  #include <pluginterfaces/gui/iplugviewcontentscalesupport.h>
  #include <pluginterfaces/vst/ivstmidicontrollers.h>
  #include <pluginterfaces/vst/ivstchannelcontextinfo.h>
+ #include <pluginterfaces/vst/vstpresetkeys.h>
  #include <public.sdk/source/common/memorystream.cpp>
  #include <public.sdk/source/common/pluginview.cpp>
  #include <public.sdk/source/vst/vsteditcontroller.cpp>

@@ -226,6 +226,8 @@ public:
         addChild (std::forward<Args> (remainingChildren)...);
     }
 
+    bool differentTo(const AudioProcessorParameterGroup &other) const;
+  
    #ifndef DOXYGEN
     // This class now has a move operator, so if you're trying to move them around, you
     // should use that, or if you really need to swap two groups, just call std::swap.
