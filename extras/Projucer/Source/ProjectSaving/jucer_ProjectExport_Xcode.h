@@ -1209,11 +1209,11 @@ public:
             auto attributes = getID() + " = { ";
 
             auto developmentTeamID = owner.getDevelopmentTeamIDString();
-
             if (developmentTeamID.isNotEmpty())
             {
                 attributes << "DevelopmentTeam = " << developmentTeamID << "; ";
-                attributes << "ProvisioningStyle = Automatic; ";
+                // cant see an easy way to get at config without spending loads of time so just always use Manual
+                attributes << "ProvisioningStyle = Manual; ";
             }
 
             auto appGroupsEnabled      = (owner.iOS && owner.isAppGroupsEnabled()) ? 1 : 0;
@@ -3030,7 +3030,7 @@ private:
 
     String addCustomFramework (String frameworkPath) const
     {
-        if (! frameworkPath.endsWithIgnoreCase (".framework"))
+        if (! frameworkPath.endsWithIgnoreCase (".framework") && ! frameworkPath.endsWithIgnoreCase (".a"))
             frameworkPath << ".framework";
 
         auto fileRefID = createFileRefID (frameworkPath);
@@ -3234,7 +3234,7 @@ private:
                    << "ORGANIZATIONNAME = " << getProject().getCompanyNameString().quoted()
                    <<"; ";
 
-        if (projectType.isGUIApplication() || projectType.isAudioPlugin())
+        if (projectType.isGUIApplication() || projectType.isAudioPlugin() || projectType.isCommandLineApp())
         {
             attributes << "TargetAttributes = { ";
 
