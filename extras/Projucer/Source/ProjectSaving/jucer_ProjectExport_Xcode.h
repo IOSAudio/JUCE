@@ -2424,7 +2424,7 @@ private:
         if (config.isDebug())
         {
             if (config.getOSXArchitectureString() == osxArch_Default)
-                s.set ("ONLY_ACTIVE_ARCH", "YES");
+                s.set ("ONLY_ACTIVE_ARCH", "NO");
         }
 
         s.set (iOS ? "\"CODE_SIGN_IDENTITY[sdk=iphoneos*]\"" : "CODE_SIGN_IDENTITY",
