@@ -359,12 +359,17 @@ struct AudioUnitHelpers
         auto defaultOutputs = processor.getChannelCountOfBus (false, 0);
 
         SortedSet<int> supportedChannels;
+      
+        // ARCTODO ARCCHANNELS why was this changed to 1 for hasMainInputBus and has MainOutputBus??
+        // testing back with 0
+        // I'm beginning to think of sidestepping the juce code and using the actual hosted values?
+        int mainBusBaseChannel = 0;
 
         // add the current configuration
         if (defaultInputs != 0 || defaultOutputs != 0)
             supportedChannels.add ((defaultInputs << 16) | defaultOutputs);
 
-        for (auto inChanNum = hasMainInputBus ? 1 : 0; inChanNum <= (hasMainInputBus ? maxNumChanToCheckFor : 0); ++inChanNum)
+        for (auto inChanNum = hasMainInputBus ? mainBusBaseChannel : 0; inChanNum <= (hasMainInputBus ? maxNumChanToCheckFor : 0); ++inChanNum)
         {
             auto inLayout = layout;
 
@@ -372,7 +377,7 @@ struct AudioUnitHelpers
                 if (! isNumberOfChannelsSupported (inBus, inChanNum, inLayout))
                     continue;
 
-            for (auto outChanNum = hasMainOutputBus ? 1 : 0; outChanNum <= (hasMainOutputBus ? maxNumChanToCheckFor : 0); ++outChanNum)
+            for (auto outChanNum = hasMainOutputBus ? mainBusBaseChannel : 0; outChanNum <= (hasMainOutputBus ? maxNumChanToCheckFor : 0); ++outChanNum)
             {
                 auto outLayout = inLayout;
 
@@ -401,7 +406,7 @@ struct AudioUnitHelpers
 
         auto hasUnsupportedInput = ! hasMainInputBus, hasUnsupportedOutput = ! hasMainOutputBus;
 
-        for (auto inChanNum = hasMainInputBus ? 1 : 0; inChanNum <= (hasMainInputBus ? maxNumChanToCheckFor : 0); ++inChanNum)
+        for (auto inChanNum = hasMainInputBus ? mainBusBaseChannel : 0; inChanNum <= (hasMainInputBus ? maxNumChanToCheckFor : 0); ++inChanNum)
         {
             auto channelConfiguration = (inChanNum << 16) | (hasInOutMismatch ? defaultOutputs : inChanNum);
 
@@ -412,7 +417,7 @@ struct AudioUnitHelpers
             }
         }
 
-        for (auto outChanNum = hasMainOutputBus ? 1 : 0; outChanNum <= (hasMainOutputBus ? maxNumChanToCheckFor : 0); ++outChanNum)
+        for (auto outChanNum = hasMainOutputBus ? mainBusBaseChannel : 0; outChanNum <= (hasMainOutputBus ? maxNumChanToCheckFor : 0); ++outChanNum)
         {
             auto channelConfiguration = ((hasInOutMismatch ? defaultInputs : outChanNum) << 16) | outChanNum;
 
@@ -441,9 +446,9 @@ struct AudioUnitHelpers
       
         bool bValidSeq = true;
         int nIndex = 0;
-        for(int input = hasMainInputBus ? 1 : 0; bValidSeq and input <= maxNumInputs; input++)
+        for(int input = hasMainInputBus ? mainBusBaseChannel : 0; bValidSeq and input <= maxNumInputs; input++)
         {
-          for(int output = hasMainOutputBus ? 1 : 0; bValidSeq && output <= maxNumOutputs; output++)
+          for(int output = hasMainOutputBus ? mainBusBaseChannel : 0; bValidSeq && output <= maxNumOutputs; output++)
           {
             int n = ((input << 16) + output);
             if(supportedChannels[nIndex] != n)
@@ -453,6 +458,7 @@ struct AudioUnitHelpers
           }
         }
       
+        bValidSeq = false;
         if(bValidSeq)
         {
           AUChannelInfo info;
