@@ -458,7 +458,6 @@ struct AudioUnitHelpers
           }
         }
       
-        bValidSeq = false;
         if(bValidSeq)
         {
           AUChannelInfo info;
@@ -491,6 +490,12 @@ struct AudioUnitHelpers
               if (j >= channelInfo.size())
                   channelInfo.add (info);
           }
+        }
+      
+      printf("*** ChannelInfos\n");
+        for(auto c : channelInfo)
+        {
+          printf(" channelInfo = %d, %d\n", c.inChannels, c.outChannels);
         }
         return channelInfo;
     }
