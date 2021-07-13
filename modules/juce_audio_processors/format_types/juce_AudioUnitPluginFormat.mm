@@ -329,7 +329,8 @@ public:
                              int numParameterSteps,
                              bool isBoolean,
                              const String& label,
-                             bool parameterValuesHaveStrings)
+                             bool parameterValuesHaveStrings,
+                             bool isMetaParameter)
             : pluginInstance (parent),
               paramID (parameterID),
               name (parameterName),
@@ -342,7 +343,8 @@ public:
               valuesHaveStrings (parameterValuesHaveStrings),
               isSwitch (isBoolean),
               valueLabel (label),
-              defaultValue (normaliseParamValue (defaultParameterValue))
+              defaultValue (normaliseParamValue (defaultParameterValue)),
+              isMeta(isMetaParameter)
         {
             // Store original parameter index in base
             setOrigParameterIndex((int)parameterID);
@@ -516,6 +518,7 @@ public:
         bool isAutomatable() const override         { return automatable; }
         bool isDiscrete() const override            { return discrete; }
         bool isBoolean() const override             { return isSwitch; }
+        bool isMetaParameter() const  override      { return isMeta; }
         int getNumSteps() const override            { return numSteps; }
 
         StringArray getAllValueStrings() const override
@@ -598,6 +601,7 @@ public:
         const bool automatable, discrete;
               int numSteps;
         const bool valuesHaveStrings, isSwitch;
+        const bool isMeta;
         const String valueLabel;
         const AudioUnitParameterValue defaultValue;
         StringArray auValueStrings;
@@ -1541,7 +1545,9 @@ public:
                         {
                             paramName = String (info.name, sizeof (info.name));
                         }
-
+                      
+                        bool isMeta = info.flags && kAudioUnitParameterFlag_IsGlobalMeta;
+                      
                         bool isDiscrete = (info.unit == kAudioUnitParameterUnit_Indexed
                                         || info.unit == kAudioUnitParameterUnit_Boolean);
                         bool isBoolean = info.unit == kAudioUnitParameterUnit_Boolean;
@@ -1590,7 +1596,8 @@ public:
                                                                    isDiscrete ? (int) (info.maxValue + 1.0f) : AudioProcessor::getDefaultNumParameterSteps(),
                                                                    isBoolean,
                                                                    label,
-                                                                   (info.flags & kAudioUnitParameterFlag_ValuesHaveStrings) != 0);
+                                                                   (info.flags & kAudioUnitParameterFlag_ValuesHaveStrings) != 0,
+                                                                   isMeta);
 
                         if (info.flags & kAudioUnitParameterFlag_HasClump)
                         {
