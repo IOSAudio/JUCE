@@ -363,6 +363,7 @@ struct AudioUnitHelpers
         // ARCTODO ARCCHANNELS why was this changed to 1 for hasMainInputBus and has MainOutputBus??
         // testing back with 0
         // I'm beginning to think of sidestepping the juce code and using the actual hosted values?
+        // 1 works for battery, 0 for others. arghh
         int mainBusBaseChannel = 0;
 
         // add the current configuration

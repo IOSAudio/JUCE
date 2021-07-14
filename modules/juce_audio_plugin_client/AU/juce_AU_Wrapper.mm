@@ -406,10 +406,33 @@ public:
 //      return(1);
 //    
 //    // ARCFATALNOW
-    if (outInfo != nullptr)
-      *outInfo = channelInfo.getRawDataPointer();
+    static Array<AUChannelInfo> auChannelInfo;
+    if(auto supportedChannels = juceFilter->getSupportedChannelInfo())
+    {
+      auChannelInfo.clear();
+      UInt32 uCount = supportedChannels->size();
+      
+      if (outInfo != nullptr)
+      {
+        for(int i = 0; i < uCount; i++)
+        {
+          AUChannelInfo auci;
+          auci.inChannels = (*supportedChannels)[i].first;
+          auci.outChannels = (*supportedChannels)[i].second;
 
-    return (UInt32) channelInfo.size();
+          auChannelInfo.add(auci);
+        }
+        *outInfo = auChannelInfo.getRawDataPointer();
+      }
+      return uCount;
+    }
+    else
+    {
+      if (outInfo != nullptr)
+        *outInfo = channelInfo.getRawDataPointer();
+
+      return (UInt32) channelInfo.size();
+    }
   }
   
   //==============================================================================
@@ -848,12 +871,26 @@ public:
     if (busIgnoresLayout (isInput, busNr))
       return 0;
     
-    const Array<AudioChannelLayoutTag>& layouts = getSupportedBusLayouts (isInput, busNr);
-    
-    if (outLayoutTags != nullptr)
-      std::copy (layouts.begin(), layouts.end(), outLayoutTags);
-    
-    return (UInt32) layouts.size();
+    if(std::unique_ptr<juce::Array<uint32_t>> tags = juceFilter->getSupportedChannelTags(isInput))
+    {
+      if (outLayoutTags != nullptr)
+        std::copy(tags->begin(), tags->end(), outLayoutTags);
+      
+      UInt32 uCount = tags->size();
+      
+      tags.reset();
+      
+      return uCount;
+    }
+    else
+    {
+      const Array<AudioChannelLayoutTag>& layouts = getSupportedBusLayouts (isInput, busNr);
+      
+      if (outLayoutTags != nullptr)
+        std::copy (layouts.begin(), layouts.end(), outLayoutTags);
+      
+      return (UInt32) layouts.size();
+    }
   }
   
   OSStatus SetAudioChannelLayout (AudioUnitScope scope, AudioUnitElement element, const AudioChannelLayout* inLayout) override

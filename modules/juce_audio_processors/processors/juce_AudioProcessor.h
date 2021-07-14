@@ -1454,6 +1454,22 @@ public:
     JUCE_DEPRECATED (virtual bool isOutputChannelStereoPair (int index) const);
    #endif
 
+//  typedef struct ChannelInfo
+//  {
+//    int16_t    inChannels;
+//    int16_t    outChannels;
+//  } ChannelInfo;
+
+  virtual std::unique_ptr<Array<std::pair<int16_t, int16_t>>> getSupportedChannelInfo(void)
+  {
+    return nullptr;
+  };
+
+  virtual std::unique_ptr<Array<uint32_t>> getSupportedChannelTags(bool bIsInput)
+  {
+    return nullptr;
+  };
+
 private:
     //==============================================================================
     struct InOutChannelPair

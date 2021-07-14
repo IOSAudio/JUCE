@@ -705,6 +705,24 @@ public:
         return true;
     }
 
+    std::unique_ptr<Array<std::pair<int16_t, int16_t>>> getSupportedChannelInfo(void) override
+    {
+      std::unique_ptr<Array<std::pair<int16_t, int16_t>>> result = std::make_unique<Array<std::pair<int16_t, int16_t>>>();
+      for (int i = 0; i < numChannelInfos; ++i)
+      {
+          auto& auInfo = channelInfos[i];
+          result->add (std::make_pair(auInfo.inChannels, auInfo.outChannels));
+      }
+      
+      return result;
+    };
+
+    std::unique_ptr<Array<uint32_t>> getSupportedChannelTags(bool bIsInput) override
+    {
+      std::unique_ptr<Array<uint32_t>> result = std::make_unique<Array<uint32_t>>(bIsInput ? supportedInLayoutTags : supportedOutLayoutTags);
+      return result;
+    };
+
     //==============================================================================
     bool canAddBus (bool isInput)    const override                   { return isBusCountWritable (isInput); }
     bool canRemoveBus (bool isInput) const override                   { return isBusCountWritable (isInput); }
@@ -1822,7 +1840,8 @@ private:
     AudioTimeStamp timeStamp;
     AudioBuffer<float>* currentBuffer = nullptr;
     Array<Array<AudioChannelSet>> supportedInLayouts, supportedOutLayouts;
-
+    Array<AudioChannelLayoutTag> supportedInLayoutTags, supportedOutLayoutTags;
+  
     int numChannelInfos;
     HeapBlock<AUChannelInfo> channelInfos;
 
@@ -2273,6 +2292,9 @@ private:
     {
         supportedInLayouts.clear();
         supportedOutLayouts.clear();
+        supportedInLayoutTags.clear();
+        supportedOutLayoutTags.clear();
+
         numChannelInfos = 0;
         channelInfos.free();
 
@@ -2285,6 +2307,8 @@ private:
             for (int busIdx = 0; busIdx < n; ++busIdx)
             {
                 Array<AudioChannelSet> supported;
+                Array<AudioChannelLayoutTag> supportedTags;
+              
                 AudioChannelSet currentLayout;
 
                 {
@@ -2322,6 +2346,7 @@ private:
                             for (int j = 0; j < static_cast<int> (numElements); ++j)
                             {
                                 const AudioChannelLayoutTag tag = layoutTags[j];
+                                (isInput ? supportedInLayoutTags : supportedOutLayoutTags).add (tag);
 
                                 if (tag != kAudioChannelLayoutTag_UseChannelDescriptions)
                                 {
