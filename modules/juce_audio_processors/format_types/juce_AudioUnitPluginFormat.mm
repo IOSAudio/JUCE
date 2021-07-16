@@ -1564,7 +1564,7 @@ public:
                             paramName = String (info.name, sizeof (info.name));
                         }
                       
-                        bool isMeta = info.flags && kAudioUnitParameterFlag_IsGlobalMeta;
+                        bool isMeta = info.flags & kAudioUnitParameterFlag_IsGlobalMeta;
                       
                         bool isDiscrete = (info.unit == kAudioUnitParameterUnit_Indexed
                                         || info.unit == kAudioUnitParameterUnit_Boolean);
