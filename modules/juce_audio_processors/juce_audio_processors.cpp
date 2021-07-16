@@ -101,8 +101,21 @@ struct AutoResizingNSViewComponent  : public ViewComponentBaseClass,
     // ARC Improve issue with AU window resizeing
     void childBoundsChanged (Component*) override
     {
+        bool bUseAsync = true;
         if (MessageManager::getInstance()->isThisTheMessageThread())
-            resizeToFitView();
+        {
+            if(auto v = static_cast<NSView *>(getView()))
+            {
+              NSRect r = v.frame;
+              if(r.origin.x >= 0 && r.origin.y >= 0)
+                bUseAsync = false;
+            }
+            
+            if(bUseAsync)
+              triggerAsyncUpdate();
+            else
+              resizeToFitView();
+        }
         else
             triggerAsyncUpdate();
     }
