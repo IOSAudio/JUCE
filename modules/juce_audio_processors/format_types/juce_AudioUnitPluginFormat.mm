@@ -525,6 +525,7 @@ public:
         {
             return auValueStrings;
         }
+  
       
 #define SEND_PARAMETER_CHANGE_EVENT_ON_MAIN_THREAD
         void sendParameterChangeEvent()

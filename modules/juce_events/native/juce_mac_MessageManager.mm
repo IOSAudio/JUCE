@@ -357,6 +357,24 @@ static void shutdownNSApp()
     [NSEvent startPeriodicEventsAfterDelay: 0  withPeriod: 0.1];
 }
 
+void MessageManager::shutdownApp()
+{
+    if (isThisTheMessageThread())
+    {
+        shutdownNSApp();
+    }
+    else
+    {
+        struct QuitCallback  : public CallbackMessage
+        {
+            QuitCallback() {}
+            void messageCallback() override    { MessageManager::getInstance()->shutdownApp(); }
+        };
+
+        (new QuitCallback())->post();
+    }
+}
+
 void MessageManager::stopDispatchLoop()
 {
    #if JUCE_PROJUCER_LIVE_BUILD
