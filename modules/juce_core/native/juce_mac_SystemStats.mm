@@ -140,16 +140,22 @@ SystemStats::OperatingSystemType SystemStats::getOperatingSystemType()
     const auto major = parts[0].getIntValue();
     const auto minor = parts[1].getIntValue();
 
-    if (major == 10)
+    switch (major)
     {
-        jassert (minor > 2);
-        return (OperatingSystemType) (minor + MacOSX_10_7 - 7);
+        case 10:
+        {
+            jassert (minor > 2);
+            return (OperatingSystemType) (minor + MacOSX_10_7 - 7);
+        }
+
+        case 11: return MacOS_11;
+        case 12: return MacOS_12;
     }
 
-    jassert (major == 11 && minor == 0);
-    return MacOSX_11_0;
+    return UnknownOS;
    #endif
 }
+
 
 String SystemStats::getOperatingSystemName()
 {
