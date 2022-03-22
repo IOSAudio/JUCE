@@ -493,11 +493,11 @@ struct AudioUnitHelpers
           }
         }
       
-        printf("*** ChannelInfos\n");
-        for(auto c : channelInfo)
-        {
-          printf(" channelInfo = %d, %d\n", c.inChannels, c.outChannels);
-        }
+//        printf("*** ChannelInfos\n");
+//        for(auto c : channelInfo)
+//        {
+//          printf(" channelInfo = %d, %d\n", c.inChannels, c.outChannels);
+//        }
         return channelInfo;
     }
 
