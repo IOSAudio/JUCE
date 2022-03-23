@@ -74,6 +74,7 @@ public:
         @see runDispatchLoop
     */
     void stopDispatchLoop();
+    void shutdownApp();
 
     /** Returns true if the stopDispatchLoop() method has been called.
     */

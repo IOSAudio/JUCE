@@ -84,6 +84,77 @@ static bool arrayContainsPlugin (const OwnedArray<PluginDescription>& list,
 #endif
 
 #if JUCE_MAC
+// TDOMERGE is this autoresizing view no longer used???
+struct AutoResizingNSViewComponent  : public ViewComponentBaseClass,
+                                      private AsyncUpdater
+{
+// ARCRESIZE
+#define IMPROVE_RESIZEING_FOR_AU 1
+#if IMPROVE_RESIZEING_FOR_AU
+    // ARC Improve issue with AU window resizeing
+    void childBoundsChanged (Component*) override
+    {
+        bool bUseAsync = true;
+        if (MessageManager::getInstance()->isThisTheMessageThread())
+        {
+            if(auto v = static_cast<NSView *>(getView()))
+            {
+              NSRect r = v.frame;
+              if(r.origin.x >= 0 && r.origin.y >= 0)
+                bUseAsync = false;
+            }
+            
+            if(bUseAsync)
+              triggerAsyncUpdate();
+            else
+              resizeToFitView();
+        }
+        else
+            triggerAsyncUpdate();
+    }
+  
+    void handleAsyncUpdate() override
+    {
+        resizeToFitView();
+    }
+#else
+  void childBoundsChanged (Component*) override  { triggerAsyncUpdate(); }
+  void handleAsyncUpdate() override              { resizeToFitView(); }
+#endif
+};
+
+//==============================================================================
+struct AutoResizingNSViewComponentWithParent  : public AutoResizingNSViewComponent,
+                                                private Timer
+{
+    AutoResizingNSViewComponentWithParent()
+    {
+        JUCE_IOS_MAC_VIEW* v = [[JUCE_IOS_MAC_VIEW alloc] init];
+        setView (v);
+        [v release];
+
+        startTimer (30);
+    }
+
+    JUCE_IOS_MAC_VIEW* getChildView() const
+    {
+        if (JUCE_IOS_MAC_VIEW* parent = (JUCE_IOS_MAC_VIEW*) getView())
+            if ([[parent subviews] count] > 0)
+                return [[parent subviews] objectAtIndex: 0];
+
+        return nil;
+    }
+
+    void timerCallback() override
+    {
+        if (JUCE_IOS_MAC_VIEW* child = getChildView())
+        {
+            stopTimer();
+            setView (child);
+        }
+    }
+};
+#endif
 
 //==============================================================================
 /*  This is an NSViewComponent which holds a long-lived NSView which acts

@@ -117,6 +117,7 @@ struct AudioUnitHelpers
     public:
         void prepare (const AudioProcessor::BusesLayout& layout, int maxFrames)
         {
+            printf("PREPARE %d, %d, %d\n", inChannels, outChannels, maxFrames);
             const auto getChannelOffsets = [] (const auto& range)
             {
                 std::vector<int> result { 0 };
@@ -362,7 +363,11 @@ struct AudioUnitHelpers
         }
 
         auto layout = processor.getBusesLayout();
-        auto maxNumChanToCheckFor = 9;
+      
+        // ARCCHANNELS AUChannelinfos can be larger than 8, with this set to 9 any plugin that has more than 8 channels gets marked as "-1"
+        // There are plugins with more than 9 channels
+        //auto maxNumChanToCheckFor = 9;
+        auto maxNumChanToCheckFor = 65;
 
         auto defaultInputs  = processor.getChannelCountOfBus (true,  0);
         auto defaultOutputs = processor.getChannelCountOfBus (false, 0);
@@ -378,13 +383,19 @@ struct AudioUnitHelpers
         };
 
         SortedSet<Channels> supportedChannels;
+      
+        // ARCTODO ARCCHANNELS why was this changed to 1 for hasMainInputBus and has MainOutputBus??
+        // testing back with 0
+        // I'm beginning to think of sidestepping the juce code and using the actual hosted values?
+        // 1 works for battery, 0 for others. arghh
+        int mainBusBaseChannel = 0;
 
         // add the current configuration
         if (defaultInputs != 0 || defaultOutputs != 0)
             supportedChannels.add ({ static_cast<SInt16> (defaultInputs),
                                      static_cast<SInt16> (defaultOutputs) });
 
-        for (auto inChanNum = hasMainInputBus ? 1 : 0; inChanNum <= (hasMainInputBus ? maxNumChanToCheckFor : 0); ++inChanNum)
+        for (auto inChanNum = hasMainInputBus ? mainBusBaseChannel : 0; inChanNum <= (hasMainInputBus ? maxNumChanToCheckFor : 0); ++inChanNum)
         {
             auto inLayout = layout;
 
@@ -392,7 +403,7 @@ struct AudioUnitHelpers
                 if (! isNumberOfChannelsSupported (inBus, inChanNum, inLayout))
                     continue;
 
-            for (auto outChanNum = hasMainOutputBus ? 1 : 0; outChanNum <= (hasMainOutputBus ? maxNumChanToCheckFor : 0); ++outChanNum)
+            for (auto outChanNum = hasMainOutputBus ? mainBusBaseChannel : 0; outChanNum <= (hasMainOutputBus ? maxNumChanToCheckFor : 0); ++outChanNum)
             {
                 auto outLayout = inLayout;
 
@@ -418,7 +429,7 @@ struct AudioUnitHelpers
 
         auto hasUnsupportedInput = ! hasMainInputBus, hasUnsupportedOutput = ! hasMainOutputBus;
 
-        for (auto inChanNum = hasMainInputBus ? 1 : 0; inChanNum <= (hasMainInputBus ? maxNumChanToCheckFor : 0); ++inChanNum)
+        for (auto inChanNum = hasMainInputBus ? mainBusBaseChannel : 0; inChanNum <= (hasMainInputBus ? maxNumChanToCheckFor : 0); ++inChanNum)
         {
             Channels channelConfiguration { static_cast<SInt16> (inChanNum),
                                             static_cast<SInt16> (hasInOutMismatch ? defaultOutputs : inChanNum) };
@@ -430,7 +441,7 @@ struct AudioUnitHelpers
             }
         }
 
-        for (auto outChanNum = hasMainOutputBus ? 1 : 0; outChanNum <= (hasMainOutputBus ? maxNumChanToCheckFor : 0); ++outChanNum)
+        for (auto outChanNum = hasMainOutputBus ? mainBusBaseChannel : 0; outChanNum <= (hasMainOutputBus ? maxNumChanToCheckFor : 0); ++outChanNum)
         {
             Channels channelConfiguration { static_cast<SInt16> (hasInOutMismatch ? defaultInputs : outChanNum),
                                             static_cast<SInt16> (outChanNum) };
@@ -442,27 +453,72 @@ struct AudioUnitHelpers
             }
         }
 
+        // lets check we have sequential sets of ins and outs
+        // this is needed for dynamic bus plugins as usually a single channel map will mean
+        // maximum channels across all buses
+        // use the existing juce set data
+        int maxNumInputs = 0;
+        int maxNumOutputs = 0;
+      
         for (const auto& supported : supportedChannels)
         {
-            AUChannelInfo info;
+          int numInputs  = supported.ins;
+          int numOutputs = supported.outs;
+          
+          maxNumInputs  = std::max(numInputs, maxNumInputs);
+          maxNumOutputs = std::max(numOutputs, maxNumOutputs);
+        }
+      
+        bool bValidSeq = true;
+        int nIndex = 0;
+        for(int input = hasMainInputBus ? mainBusBaseChannel : 0; bValidSeq and input <= maxNumInputs; input++)
+        {
+          for(int output = hasMainOutputBus ? mainBusBaseChannel : 0; bValidSeq && output <= maxNumOutputs; output++)
+          {
+            int n = ((input << 16) + output);
+            if(supportedChannels[nIndex] != n)
+              bValidSeq = false;
+            else
+              nIndex++;
+          }
+        }
+      
+        if(bValidSeq)
+        {
+          AUChannelInfo info;
+          info.inChannels  = (SInt16) -maxNumInputs;
+          info.outChannels = (SInt16) -maxNumOutputs;
+          channelInfo.add (info);
+        }
+        else
+        {
+        for (const auto& supported : supportedChannels)
+          {
+              AUChannelInfo info;
 
-            // see here: https://developer.apple.com/library/mac/documentation/MusicAudio/Conceptual/AudioUnitProgrammingGuide/TheAudioUnit/TheAudioUnit.html
+              // see here: https://developer.apple.com/library/mac/documentation/MusicAudio/Conceptual/AudioUnitProgrammingGuide/TheAudioUnit/TheAudioUnit.html
             info.inChannels  = static_cast<SInt16> (hasMainInputBus  ? (hasUnsupportedInput  ? supported.ins  : (hasInOutMismatch && (! hasUnsupportedOutput) ? -2 : -1)) : 0);
             info.outChannels = static_cast<SInt16> (hasMainOutputBus ? (hasUnsupportedOutput ? supported.outs : (hasInOutMismatch && (! hasUnsupportedInput)  ? -2 : -1)) : 0);
 
-            if (info.inChannels == -2 && info.outChannels == -2)
-                info.inChannels = -1;
+              if (info.inChannels == -2 && info.outChannels == -2)
+                  info.inChannels = -1;
 
-            int j;
-            for (j = 0; j < channelInfo.size(); ++j)
-                if (info.inChannels == channelInfo.getReference (j).inChannels
-                      && info.outChannels == channelInfo.getReference (j).outChannels)
-                    break;
+              int j;
+              for (j = 0; j < channelInfo.size(); ++j)
+                  if (info.inChannels == channelInfo.getReference (j).inChannels
+                        && info.outChannels == channelInfo.getReference (j).outChannels)
+                      break;
 
-            if (j >= channelInfo.size())
-                channelInfo.add (info);
+              if (j >= channelInfo.size())
+                  channelInfo.add (info);
+          }
         }
-
+      
+//        printf("*** ChannelInfos\n");
+//        for(auto c : channelInfo)
+//        {
+//          printf(" channelInfo = %d, %d\n", c.inChannels, c.outChannels);
+//        }
         return channelInfo;
     }
 

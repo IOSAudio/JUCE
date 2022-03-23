@@ -1309,11 +1309,10 @@ public:
             StringArray attributes;
 
             auto developmentTeamID = owner.getDevelopmentTeamIDString();
-
             if (developmentTeamID.isNotEmpty())
             {
                 attributes.add ("DevelopmentTeam = " + developmentTeamID);
-                attributes.add ("ProvisioningStyle = Automatic");
+                attributes.add ("ProvisioningStyle = Manual");
             }
 
             std::map<String, bool> capabilities;
@@ -2554,7 +2553,7 @@ private:
         if (config.isDebug())
         {
             if (config.getMacOSArchitectureString() == macOSArch_Default)
-                s.set ("ONLY_ACTIVE_ARCH", "YES");
+                s.set ("ONLY_ACTIVE_ARCH", "NO");
         }
 
         s.set (iOS ? "\"CODE_SIGN_IDENTITY[sdk=iphoneos*]\"" : "CODE_SIGN_IDENTITY",
@@ -3197,7 +3196,7 @@ private:
 
     String addCustomFramework (String frameworkPath) const
     {
-        if (! frameworkPath.endsWithIgnoreCase (".framework"))
+        if (! frameworkPath.endsWithIgnoreCase (".framework") && ! frameworkPath.endsWithIgnoreCase (".a"))
             frameworkPath << ".framework";
 
         auto fileRefID = createFileRefID (frameworkPath);
@@ -3401,7 +3400,7 @@ private:
         attributes["LastUpgradeCheck"] = "1320";
         attributes["ORGANIZATIONNAME"] = getProject().getCompanyNameString().quoted();
 
-        if (projectType.isGUIApplication() || projectType.isAudioPlugin())
+        if (projectType.isGUIApplication() || projectType.isAudioPlugin() || projectType.isCommandLineApp())
         {
             StringArray targetAttributes;
 

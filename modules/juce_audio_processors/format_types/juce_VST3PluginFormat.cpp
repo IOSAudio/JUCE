@@ -27,7 +27,6 @@
 
 #include "juce_VST3Headers.h"
 #include "juce_VST3Common.h"
-
 namespace juce
 {
 
@@ -188,6 +187,8 @@ static void createPluginDescription (PluginDescription& description,
 
     description.deprecatedUid       = getHashForRange (info.cid);
     description.uniqueId            = getHashForRange (getNormalisedTUID (info.cid));
+    memcpy(description.tuid, info.cid, 16);
+    // CAD Change END
 
     if (infoW != nullptr)      fillDescriptionWith (description, *infoW);
     else if (info2 != nullptr) fillDescriptionWith (description, *info2);
@@ -2823,7 +2824,12 @@ public:
     //==============================================================================
     int getNumPrograms() override                        { return programNames.size(); }
     const String getProgramName (int index) override     { return index >= 0 ? programNames[index] : String(); }
-    void changeProgramName (int, const String&) override {}
+    void changeProgramName (int, const String &programName) override
+    {
+      MemoryBlock state;
+      getStateInformation(state);
+      setStateInformationWithProgramName(state.getData(), (int)state.getSize(), programName);
+    }
 
     int getCurrentProgram() override
     {
@@ -2915,6 +2921,37 @@ public:
                     editController->setState (controllerStream);
             }
         }
+    }
+
+    void setStateInformationWithProgramName (const void* data, int sizeInBytes, String sProgramName) override
+    {
+      if (auto head = AudioProcessor::getXmlFromBinary (data, sizeInBytes))
+      {
+        auto componentStream (createVST3MemoryStreamForState (*head, "IComponent"));
+        if (componentStream != nullptr && holder->component != nullptr)
+        {
+          componentStream->setProgramName(sProgramName);
+          holder->component->setState (componentStream);
+        }
+        
+        if (editController != nullptr)
+        {
+          if (componentStream != nullptr)
+          {
+            int64 result;
+            componentStream->seek (0, IBStream::kIBSeekSet, &result);
+            editController->setComponentState (componentStream);
+          }
+          
+          auto controllerStream (createVST3MemoryStreamForState (*head, "IEditController"));
+          
+          if (controllerStream != nullptr)
+          {
+            controllerStream->setProgramName(sProgramName);
+            editController->setState (controllerStream);
+          }
+        }
+      }
     }
 
     void setComponentStateAndResetParameters (Steinberg::MemoryStream& stream)
@@ -3070,8 +3107,22 @@ private:
         return nullptr;
     }
 
-    CachedParamValues cachedParamValues;
-    VSTComSmartPtr<ParameterChanges> inputParameterChanges  { new ParameterChanges };
+      if (auto* state = head.getChildByName (identifier))
+      {
+        MemoryBlock mem;
+        
+        if (mem.fromBase64Encoding (state->getAllSubText()))
+        {
+          ComSmartPtr<VST3MemoryStream> stream (new VST3MemoryStream(), false);
+          stream->setSize ((TSize) mem.getSize());
+          mem.copyTo (stream->getData(), 0, mem.getSize());
+          return stream;
+        }
+      }
+      
+      return nullptr;
+    }
+
     VSTComSmartPtr<ParameterChanges> outputParameterChanges { new ParameterChanges };
     VSTComSmartPtr<MidiEventList> midiInputs, midiOutputs;
     Vst::ProcessContext timingInfo; //< Only use this in processBlock()!
@@ -3092,7 +3143,7 @@ private:
         }
     }
 
-    void refreshParameterList() override
+    bool refreshParameterList() override
     {
         AudioProcessorParameterGroup newParameterTree;
 
@@ -3128,9 +3179,10 @@ private:
                                              i,
                                              paramInfo.id,
                                              (paramInfo.flags & Vst::ParameterInfo::kCanAutomate) != 0);
-
             if ((paramInfo.flags & Vst::ParameterInfo::kIsBypass) != 0)
                 bypassParam = param;
+
+            param->setOrigParameterIndex((int)paramInfo.id);
 
             std::function<AudioProcessorParameterGroup*(Vst::UnitID)> findOrCreateGroup;
             findOrCreateGroup = [&groupMap, &infoMap, &findOrCreateGroup] (Vst::UnitID groupID)
@@ -3160,20 +3212,25 @@ private:
             group->addChild (std::unique_ptr<AudioProcessorParameter> (param));
         }
 
-        setHostedParameterTree (std::move (newParameterTree));
-
-        idToParamMap = [this]
+		// TODOMERGE lookat this
+        if(newParameterTree.differentTo(getParameterTree()))
         {
-            std::map<Vst::ParamID, VST3Parameter*> result;
+	        setHostedParameterTree (std::move (newParameterTree));
+	        idToParamMap = [this]
+	        {
+	            std::map<Vst::ParamID, VST3Parameter*> result;
 
-            for (auto* parameter : getParameters())
-            {
-                auto* vst3Param = static_cast<VST3Parameter*> (parameter);
-                result.emplace (vst3Param->getParamID(), vst3Param);
-            }
-
-            return result;
-        }();
+	            for (auto* parameter : getParameters())
+	            {
+	                auto* vst3Param = static_cast<VST3Parameter*> (parameter);
+	                result.emplace (vst3Param->getParamID(), vst3Param);
+	            }
+	        }();
+		
+			return true;
+		}
+		else
+			return false;
     }
 
     void synchroniseStates()
@@ -3641,9 +3698,44 @@ tresult VST3HostContext::notifyProgramListChange (Vst::ProgramListID, Steinberg:
 }
 
 //==============================================================================
+//TODOMERGE is this not used anymore??
+int VST3HostContext::getIndexOfParamID (Vst::ParamID paramID)
+{
+    if (plugin == nullptr || plugin->editController == nullptr)
+        return -1;
+
+    auto result = getMappedParamID (paramID);
+
+    if (result < 0)
+    {
+        const Array<AudioProcessorParameter *> &parameters = plugin->getParameters();
+      
+        for (int i = 0; i < parameters.size(); ++i)
+        {
+            paramToIndexMap[(Vst::ParamID)parameters[i]->getOrigParameterIndex()] = i;
+        }
+        result = getMappedParamID (paramID);
+
+//        auto numParams = plugin->editController->getParameterCount();
+//
+//        for (int i = 0; i < numParams; ++i) //this looks wrong!!!
+//        {
+//            Vst::ParameterInfo paramInfo;
+//
+//            plugin->editController->getParameterInfo (i, paramInfo);
+//            paramToIndexMap[paramInfo.id] = i;
+//            CADLogInfo("[%d] = [%u]", i, paramInfo.id);
+//        }
+//
+//        result = getMappedParamID (paramID);
+    }
+
+    return result;
+}
+
 //==============================================================================
-VST3PluginFormat::VST3PluginFormat()  = default;
-VST3PluginFormat::~VST3PluginFormat() = default;
+VST3PluginFormat::VST3PluginFormat() {}
+VST3PluginFormat::~VST3PluginFormat() {}
 
 bool VST3PluginFormat::setStateFromVSTPresetFile (AudioPluginInstance* api, const MemoryBlock& rawData)
 {
@@ -3696,11 +3788,9 @@ void VST3PluginFormat::createPluginInstance (const PluginDescription& descriptio
         if (const VST3ModuleHandle::Ptr module = VST3ModuleHandle::findOrCreateModule (file, description))
         {
             std::unique_ptr<VST3ComponentHolder> holder (new VST3ComponentHolder (module));
-
             if (holder->initialise())
             {
                 result.reset (new VST3PluginInstance (holder.release()));
-
                 if (! result->initialise())
                     result.reset();
             }

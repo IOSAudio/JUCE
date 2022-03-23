@@ -1,4 +1,4 @@
-/*
+  /*
   ==============================================================================
 
    This file is part of the JUCE library.
@@ -904,10 +904,11 @@ private:
 //==============================================================================
 namespace TextEditorDefs
 {
-    const int textChangeMessageId = 0x10003001;
-    const int returnKeyMessageId  = 0x10003002;
-    const int escapeKeyMessageId  = 0x10003003;
-    const int focusLossMessageId  = 0x10003004;
+    const int textChangeMessageId   = 0x10003001;
+    const int returnKeyMessageId    = 0x10003002;
+    const int escapeKeyMessageId    = 0x10003003;
+    const int focusLossMessageId    = 0x10003004;
+    const int focusGainedMessageId  = 0x10003005;
 
     const int maxActionsPerTransaction = 100;
 
@@ -2203,6 +2204,8 @@ void TextEditor::focusGained (FocusChangeType cause)
 
     repaint();
     updateCaretPosition();
+  
+    postCommandMessage (TextEditorDefs::focusGainedMessageId);
 }
 
 void TextEditor::focusLost (FocusChangeType)
@@ -2274,6 +2277,15 @@ void TextEditor::handleCommandMessage (const int commandId)
         if (! checker.shouldBailOut() && onFocusLost != nullptr)
             onFocusLost();
 
+        break;
+
+    case TextEditorDefs::focusGainedMessageId:
+        updateValueFromText();
+        listeners.callChecked (checker, [this] (Listener& l) { l.textEditorFocusGained (*this); });
+        
+        if (! checker.shouldBailOut() && onFocusGained != nullptr)
+          onFocusGained();
+        
         break;
 
     default:

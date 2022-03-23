@@ -22,6 +22,7 @@
 
   ==============================================================================
 */
+#pragma clang diagnostic ignored "-Wnon-virtual-dtor"
 
 #include <juce_core/system/juce_TargetPlatform.h>
 #include <juce_core/system/juce_CompilerWarnings.h>
@@ -51,6 +52,15 @@ JUCE_BEGIN_NO_SANITIZE ("vptr")
 #include "../utility/juce_LinuxMessageThread.h"
 #include <juce_audio_processors/format_types/juce_LegacyAudioParameter.cpp>
 #include <juce_audio_processors/format_types/juce_VST3Common.h>
+#include <juce_audio_processors/format_types/pslextensions/pslvst2extensions.h>
+#include <juce_audio_processors/format_types/pslextensions/ipslgainreduction.h>
+#include <juce_audio_processors/format_types/pslextensions/ipslcontextinfo.h>
+#include <juce_audio_processors/format_types/pslextensions/ipsleditcontroller.h>
+
+DEF_CLASS_IID(Presonus::IGainReductionInfo)
+DEF_CLASS_IID (Presonus::IContextInfoHandler)
+DEF_CLASS_IID (Presonus::IContextInfoHandler2)
+DEF_CLASS_IID (Presonus::IContextInfoProvider)
 
 #ifndef JUCE_VST3_CAN_REPLACE_VST2
  #define JUCE_VST3_CAN_REPLACE_VST2 1
@@ -586,18 +596,26 @@ private:
     {
         auto juceParamID = LegacyAudioParameter::getParamID (param, false);
 
-      #if JUCE_FORCE_USE_LEGACY_PARAM_IDS
-        return static_cast<Vst::ParamID> (juceParamID.getIntValue());
-      #else
-        auto paramHash = static_cast<Vst::ParamID> (juceParamID.hashCode());
+      // If we are an int just return
+      if(juceParamID.containsOnly("0123456789"))
+      {
+        return static_cast<Vst::ParamID>(juceParamID.getIntValue());
+      }
+      else
+      {
+        #if JUCE_FORCE_USE_LEGACY_PARAM_IDS
+          return static_cast<Vst::ParamID> (juceParamID.getIntValue());
+        #else
+          auto paramHash = static_cast<Vst::ParamID> (juceParamID.hashCode());
 
-       #if JUCE_USE_STUDIO_ONE_COMPATIBLE_PARAMETERS
-        // studio one doesn't like negative parameters
-        paramHash &= ~(((Vst::ParamID) 1) << (sizeof (Vst::ParamID) * 8 - 1));
-       #endif
+         #if JUCE_USE_STUDIO_ONE_COMPATIBLE_PARAMETERS
+          // studio one doesn't like negative parameters
+          paramHash &= ~(((Vst::ParamID) 1) << (sizeof (Vst::ParamID) * 8 - 1));
+         #endif
 
-        return paramHash;
-      #endif
+          return paramHash;
+        #endif
+      }
     }
 
     //==============================================================================
@@ -639,7 +657,11 @@ class JuceVST3EditController : public Vst::EditController,
                                public Vst::IUnitInfo,
                                public Vst::ChannelContext::IInfoListener,
                                public AudioProcessorListener,
-                               private ComponentRestarter::Listener
+                               private AudioProcessorParameter::Listener
+                               public Presonus::IGainReductionInfo,
+                               public Presonus::IContextInfoHandler,
+                               public Presonus::IContextInfoHandler2
+
 {
 public:
     JuceVST3EditController (Vst::IHostApplication* host)
@@ -667,7 +689,28 @@ public:
         const auto juceProvidedInterface = queryInterfaceInternal (targetIID);
 
         return extractResult (userProvidedInterface, juceProvidedInterface, obj);
-    }
+		
+		TODO THIS needs moving into the new code
+#ifdef OLD
+        TEST_FOR_AND_RETURN_IF_VALID (targetIID, Presonus::IContextInfoHandler)
+        TEST_FOR_AND_RETURN_IF_VALID (targetIID, Presonus::IContextInfoHandler2)
+
+        if (metersParamIDs.size() > 0)
+        {
+          TEST_FOR_AND_RETURN_IF_VALID (targetIID, Presonus::IGainReductionInfo)
+        }
+
+        if (doUIDsMatch (targetIID, JuceAudioProcessor::iid))
+        {
+            audioProcessor->addRef();
+            *obj = audioProcessor;
+            return kResultOk;
+        }
+
+        *obj = nullptr;
+        return kNoInterface;    
+#endif		
+}
 
     //==============================================================================
     tresult PLUGIN_API initialize (FUnknown* context) override
@@ -687,7 +730,100 @@ public:
 
         return EditController::terminate();
     }
+  
 
+    void PLUGIN_API notifyContextInfoChange() override
+    {
+      printf("notifyContextInfoChange\n");
+      
+      // interested in index, selected, focused
+      FUnknownPtr<Presonus::IContextInfoProvider> contextInfoProvider (componentHandler);
+      AudioProcessor *instance = getPluginInstance();
+      if(contextInfoProvider && instance)
+      {
+        AudioProcessor::TrackProperties trackProperties;
+
+        //contextInfoProvider->getContextInfoValue (trackProperties.channelIndex, Presonus::ContextInfo::kIndex);
+        
+				Steinberg::int32 isFocused;
+				Steinberg::int32 isSelected;
+        
+        contextInfoProvider->getContextInfoValue (isSelected, Presonus::ContextInfo::kSelected);
+        contextInfoProvider->getContextInfoValue (isFocused, Presonus::ContextInfo::kFocused);
+        
+        trackProperties.isFocused  = (AudioProcessor::TrackProperties::TriStateBool)(isFocused  == 1);
+        trackProperties.isSelected = (AudioProcessor::TrackProperties::TriStateBool)(isSelected == 1);
+
+        if (MessageManager::getInstance()->isThisTheMessageThread())
+          instance->updateTrackProperties (trackProperties);
+        else
+          MessageManager::callAsync ([trackProperties, instance]
+                                     { instance->updateTrackProperties (trackProperties); });
+      }
+    }
+  
+    void PLUGIN_API notifyContextInfoChange (Steinberg::FIDString id) override
+    {
+      printf("notifyContextInfoChange with id (%s)\n", id);
+      FUnknownPtr<Presonus::IContextInfoProvider> contextInfoProvider (componentHandler);
+      AudioProcessor *instance = getPluginInstance();
+
+      if(contextInfoProvider && instance)
+      {
+        AudioProcessor::TrackProperties trackProperties;
+
+//        if(FIDStringsEqual(id, Presonus::ContextInfo::kIndex))
+//        {
+//          int32 channelIndex = 0;
+//          contextInfoProvider->getContextInfoValue (channelIndex, Presonus::ContextInfo::kIndex);
+//          pAudioProcessor->setChannelNumber(channelIndex);
+//        }
+
+        bool bSendUpdate = false;
+        if(FIDStringsEqual(id, Presonus::ContextInfo::kSelected))
+        {
+          Steinberg::int32 isSelected;
+          contextInfoProvider->getContextInfoValue (isSelected, Presonus::ContextInfo::kSelected);
+          trackProperties.isSelected = (AudioProcessor::TrackProperties::TriStateBool)(isSelected == 1);
+          bSendUpdate = true;
+        }
+        
+        if(FIDStringsEqual(id, Presonus::ContextInfo::kFocused))
+        {
+          Steinberg::int32 isFocused;
+          contextInfoProvider->getContextInfoValue (isFocused, Presonus::ContextInfo::kFocused);
+          trackProperties.isFocused = (AudioProcessor::TrackProperties::TriStateBool)(isFocused == 1);
+          bSendUpdate = true;
+        }
+        
+        if(bSendUpdate)
+        {
+          if (MessageManager::getInstance()->isThisTheMessageThread())
+            instance->updateTrackProperties (trackProperties);
+          else
+            MessageManager::callAsync ([trackProperties, instance]
+                                       { instance->updateTrackProperties (trackProperties); });
+        }
+      }
+    }
+  
+    double PLUGIN_API getGainReductionValueInDb() override
+    {
+      double gainReduction = 1.0;
+      bool hasGRMeter = false;
+      for (int i = 0; i < metersParamIDs.size(); ++i)
+      {
+        // sum gain reduction meters only
+        auto category = getPluginInstance()->getParameterCategory(i);
+        if (category == AudioProcessorParameter::Category::compressorLimiterGainReductionMeter || category == AudioProcessorParameter::Category::expanderGateGainReductionMeter)
+        {
+          gainReduction *= getPluginInstance()->getParameter(metersParamIDs[i]);
+          hasGRMeter = true;
+        }
+      }
+      return hasGRMeter ? Decibels::gainToDecibels(1.0 - jmin(1.0,gainReduction)) : 0;
+    }
+  
     //==============================================================================
     struct Param  : public Vst::Parameter
     {
@@ -712,7 +848,7 @@ public:
             }
 
             info.defaultNormalizedValue = param.getDefaultValue();
-            jassert (info.defaultNormalizedValue >= 0 && info.defaultNormalizedValue <= 1.0f);
+            //ARCTODO jassert (info.defaultNormalizedValue >= 0 && info.defaultNormalizedValue <= 1.0f);
 
             // Is this a meter?
             if ((((unsigned int) param.getCategory() & 0xffff0000) >> 16) == 2)
@@ -902,8 +1038,23 @@ public:
                                                          Vst::ChannelContext::GetBlue ((uint32) colour), Vst::ChannelContext::GetAlpha ((uint32) colour));
                 }
 
+                {
+                  int64 channelIndex;
+                  if (list->getInt (Vst::ChannelContext::kChannelIndexKey, channelIndex) == kResultTrue)
+                  {
+                    trackProperties.trackNumber = channelIndex;
+                  }
+                }
 
+                {
+                  int64 pluginLocation;
+                  if (list->getInt (Vst::ChannelContext::kChannelPluginLocationKey, pluginLocation) == kResultTrue)
+                  {
+                    trackProperties.pluginLocation = pluginLocation;
+                  }
+                }
 
+              
                 if (MessageManager::getInstance()->isThisTheMessageThread())
                     instance->updateTrackProperties (trackProperties);
                 else
@@ -1301,12 +1452,11 @@ private:
     Vst::ParamID parameterToMidiControllerOffset;
     MidiController parameterToMidiController[(int) numMIDIChannels * (int) Vst::kCountCtrlNumber];
     Vst::ParamID midiControllerToParameter[numMIDIChannels][Vst::kCountCtrlNumber];
+    Array<int> metersParamIDs;
 
     void restartComponentOnMessageThread (int32 flags) override
     {
         if ((flags & pluginShouldBeMarkedDirtyFlag) != 0)
-            setDirty (true);
-
         flags &= ~pluginShouldBeMarkedDirtyFlag;
 
         if (auto* handler = componentHandler)
@@ -1432,6 +1582,12 @@ private:
 
                     parameters.addParameter (new Param (*this, *juceParam, vstParamID, unitID,
                                                         (vstParamID == audioProcessor->getBypassParamID())));
+                  
+                    // is this a meter?
+                    if (((pluginInstance->getParameterCategory(i) & 0xffff0000) >> 16) == 2)
+                    {
+                      metersParamIDs.add (i);
+                    }
                 }
 
                 const auto programParamId = audioProcessor->getProgramParamID();
@@ -3931,6 +4087,116 @@ private:
 
 using namespace juce;
 
+#define CAD_CODE
+#ifdef CAD_CODE
+// CAD Change START
+
+extern char     pgCommsMem[1024+8];
+extern int      *pgChildID;
+extern int      *pgCategory;
+extern const char     *sgOrigVst;
+extern const char     *sgName;
+extern char     *pgCategoryName;
+extern uint8_t  *pgGuid;
+
+//==============================================================================
+// The VST3 plugin entry point.
+JUCE_EXPORTED_FUNCTION IPluginFactory* PLUGIN_API GetPluginFactory()
+{
+  printf("*****GetPluginFactory*****\n");
+  PluginHostType::jucePlugInClientCurrentWrapperType = AudioProcessor::wrapperType_VST3;
+  
+#if JUCE_MSVC || (JUCE_WINDOWS && JUCE_CLANG)
+  // Cunning trick to force this function to be exported. Life's too short to
+  // faff around creating .def files for this kind of thing.
+  #if JUCE_32BIT
+    #pragma comment(linker, "/EXPORT:GetPluginFactory=_GetPluginFactory@0")
+  #else
+    #pragma comment(linker, "/EXPORT:GetPluginFactory=GetPluginFactory")
+  #endif
+#endif
+  
+  const char8 *pszName = JucePlugin_Name;
+  FUID        aeFuid = JuceVST3Component::iid;
+  FUID        ccFuid = JuceVST3EditController::iid;
+  const char8 *pszSubCategories = JucePlugin_Vst3Category;
+  std::string sName;
+ 
+  bool bFoundMarker = 0 == memcmp((void *) pgCommsMem, (void *) "CADVSTMark", 10);
+  
+  if(!bFoundMarker)
+  {
+    sName = sgName;
+    sName += " (PluginController VST3)";
+    pszName = (const char8 *)sName.c_str();
+    pszSubCategories = pgCategoryName;
+
+    TUID aeTuid;
+    TUID ccTuid;
+
+    memcpy(aeTuid, pgGuid, 16);
+    memcpy(ccTuid, pgGuid, 16);
+
+    uint8_t aeMangle[8] = {'C', 'a', 'd', 'L', 'A', 'E', 'C', 'L'};
+    uint8_t ccMangle[8] = {'C', 'a', 'd', 'L', 'C', 'C', 'C', 'L'};
+
+    for(int c = 0; c < 16; c++)
+    {
+      aeTuid[c] = aeTuid[c] ^ aeMangle[c%8];
+      ccTuid[c] = ccTuid[c] ^ ccMangle[c%8];
+    }
+    
+    aeFuid = FUID::fromTUID(aeTuid);
+    FUID *pAeIid = (FUID *)&JuceVST3Component::iid;
+    *pAeIid = FUID::fromTUID(aeTuid);
+    
+    ccFuid = FUID::fromTUID(ccTuid);
+    FUID *pCcIid = (FUID *)&JuceVST3EditController::iid;
+    *pCcIid = FUID::fromTUID(ccTuid);
+  }
+  else
+    memcpy((void *)pgGuid, aeFuid, 16);
+  
+  
+  if (globalFactory == nullptr)
+  {
+    globalFactory = new JucePluginFactory();
+    //ARCTODO we need componentfags ??
+    
+    static const PClassInfo2 componentClass (aeFuid,
+                                             PClassInfo::kManyInstances,
+                                             kVstAudioEffectClass,
+                                             pszName,
+                                             JucePlugin_Vst3ComponentFlags,
+                                             pszSubCategories,
+                                             JucePlugin_Manufacturer,
+                                             JucePlugin_VersionString,
+                                             kVstVersionString);
+    
+    globalFactory->registerClass (componentClass, createComponentInstance);
+    
+    static const PClassInfo2 controllerClass (ccFuid,
+                                              PClassInfo::kManyInstances,
+                                              kVstComponentControllerClass,
+                                              pszName,
+                                              JucePlugin_Vst3ComponentFlags,
+                                              pszSubCategories,
+                                              JucePlugin_Manufacturer,
+                                              JucePlugin_VersionString,
+                                              kVstVersionString);
+    
+    globalFactory->registerClass (controllerClass, createControllerInstance);
+  }
+  else
+  {
+    globalFactory->addRef();
+  }
+  
+  return dynamic_cast<IPluginFactory*> (globalFactory);
+}
+
+#else
+
 //==============================================================================
 // The VST3 plugin entry point.
 extern "C" SMTG_EXPORT_SYMBOL IPluginFactory* PLUGIN_API GetPluginFactory()
@@ -3979,7 +4245,9 @@ extern "C" SMTG_EXPORT_SYMBOL IPluginFactory* PLUGIN_API GetPluginFactory()
 
     return dynamic_cast<IPluginFactory*> (globalFactory);
 }
+#endif // CAD_CODE
 
+// CAD Change END
 //==============================================================================
 #if JUCE_WINDOWS
 extern "C" BOOL WINAPI DllMain (HINSTANCE instance, DWORD reason, LPVOID) { if (reason == DLL_PROCESS_ATTACH) Process::setCurrentModuleInstanceHandle (instance); return true; }

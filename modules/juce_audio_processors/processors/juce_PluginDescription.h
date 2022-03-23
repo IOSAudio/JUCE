@@ -129,6 +129,9 @@ public:
     /** True if the plug-in is part of a multi-type container, e.g. a VST Shell. */
     bool hasSharedContainer = false;
 
+	// CAD Change START
+    int8 tuid[16] = {0};
+  	// CAD Change END
     /** Returns true if the two descriptions refer to the same plug-in.
 
         This isn't quite as simple as them just having the same file (because of

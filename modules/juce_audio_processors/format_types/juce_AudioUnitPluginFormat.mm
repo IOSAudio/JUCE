@@ -136,26 +136,25 @@ namespace AudioUnitFormatHelpers
     {
         if (fileOrIdentifier.startsWithIgnoreCase (auIdentifierPrefix))
         {
-            String s (fileOrIdentifier.substring (jmax (fileOrIdentifier.lastIndexOfChar (':'),
-                                                        fileOrIdentifier.lastIndexOfChar ('/')) + 1));
+            // Original code doesnt work for codes containing ',', ':' or '/'
+            // find first slash, then codes are always 4 bytes sperated by commas
 
-            StringArray tokens;
-            tokens.addTokens (s, ",", StringRef());
-            tokens.removeEmptyStrings();
+            String s (fileOrIdentifier.substring (jmax (fileOrIdentifier.indexOfChar (':'),
+                                                        fileOrIdentifier.indexOfChar ('/')) + 1));
 
-            if (tokens.size() == 3)
+            if ((s.length() == 14) && (s[4] == ',') && (s[9] == ','))
             {
                 zerostruct (desc);
-                desc.componentType         = stringToOSType (tokens[0]);
-                desc.componentSubType      = stringToOSType (tokens[1]);
-                desc.componentManufacturer = stringToOSType (tokens[2]);
+                desc.componentType         = stringToOSType (s.substring(0,4));
+                desc.componentSubType      = stringToOSType (s.substring(5,9));
+                desc.componentManufacturer = stringToOSType (s.substring(10,14));
 
                 if (AudioComponent comp = AudioComponentFindNext (nullptr, &desc))
                 {
                     getNameAndManufacturer (comp, name, manufacturer);
 
                     if (manufacturer.isEmpty())
-                        manufacturer = tokens[2];
+                        manufacturer = s.substring(10,14);
 
                     if (version.isEmpty())
                     {
@@ -434,7 +433,8 @@ public:
                              int numParameterSteps,
                              bool isBoolean,
                              const String& label,
-                             bool parameterValuesHaveStrings)
+                             bool parameterValuesHaveStrings,
+                             bool isMetaParameter)
             : pluginInstance (parent),
               paramID (parameterID),
               name (parameterName),
@@ -447,9 +447,60 @@ public:
               valuesHaveStrings (parameterValuesHaveStrings),
               isSwitch (isBoolean),
               valueLabel (label),
-              defaultValue (normaliseParamValue (defaultParameterValue))
+              defaultValue (normaliseParamValue (defaultParameterValue)),
+              isMeta(isMetaParameter)
         {
-            auValueStrings = Parameter::getAllValueStrings();
+            // Store original parameter index in base
+            setOrigParameterIndex((int)parameterID);
+
+            // Parameter::getAllValueStrings() doesn't work for audio units that implement kAudioUnitProperty_ParameterValueStrings and not kAudioUnitProperty_ParameterStringFromValue
+            if(discrete)
+            {
+              CFArrayRef cfaNamedParams;
+      
+              UInt32   uPropertySize = sizeof(cfaNamedParams);
+              OSStatus err = AudioUnitGetProperty (pluginInstance.audioUnit, kAudioUnitProperty_ParameterValueStrings, kAudioUnitScope_Global, paramID, &cfaNamedParams, &uPropertySize);
+      
+              if (!err && cfaNamedParams)
+              {
+                numSteps = static_cast<int>(CFArrayGetCount(cfaNamedParams));
+      
+                for(CFIndex uPvs = 0; uPvs < numSteps; uPvs++)
+                {
+                  CFStringRef cfRef = (CFStringRef)CFArrayGetValueAtIndex(cfaNamedParams, uPvs);
+                  auValueStrings.add(juce::String::fromCFString(cfRef));
+                }
+      
+                CFRelease(cfaNamedParams);
+              }
+              
+              if(auValueStrings.size() == 0)
+              {
+                if(!valuesHaveStrings)
+                {
+                  // Parameter::getAllValueStrings() doesn't work for audio units that dont implement kAudioUnitProperty_ParameterValueStrings and have a min value of non 0
+                  numSteps = (int)(maxValue+1 - minValue);
+                  for(int nIndex = 0; nIndex < numSteps; nIndex++)
+                  {
+                    float fValue = minValue + nIndex;
+                    
+                    char buffer[128];
+                    
+                    if((int)fValue == fValue)
+                      sprintf(buffer, "%d", (int)(fValue));
+                    else
+                      sprintf(buffer, "%.2f", fValue);
+                    
+                    auValueStrings.add(buffer);
+                  }
+                }
+                else
+                {
+                  // otherwise run existing code
+                  auValueStrings = Parameter::getAllValueStrings();
+                }
+              }
+            }
         }
 
         float getValue() const override
@@ -562,6 +613,7 @@ public:
         bool isAutomatable() const override         { return automatable; }
         bool isDiscrete() const override            { return discrete; }
         bool isBoolean() const override             { return isSwitch; }
+        bool isMetaParameter() const  override      { return isMeta; }
         int getNumSteps() const override            { return numSteps; }
 
         StringArray getAllValueStrings() const override
@@ -573,25 +625,65 @@ public:
         {
             return String (paramID);
         }
-
+  
+      
+#define SEND_PARAMETER_CHANGE_EVENT_ON_MAIN_THREAD
         void sendParameterChangeEvent()
         {
-           #if JUCE_MAC
-            jassert (pluginInstance.audioUnit != nullptr);
-
-            AudioUnitEvent ev;
-            ev.mEventType                        = kAudioUnitEvent_ParameterValueChange;
-            ev.mArgument.mParameter.mAudioUnit   = pluginInstance.audioUnit;
-            ev.mArgument.mParameter.mParameterID = paramID;
-            ev.mArgument.mParameter.mScope       = kAudioUnitScope_Global;
-            ev.mArgument.mParameter.mElement     = 0;
-
-            AUEventListenerNotify (pluginInstance.eventListenerRef, nullptr, &ev);
-           #endif
+            #if JUCE_MAC
+              #ifdef SEND_PARAMETER_CHANGE_EVENT_ON_MAIN_THREAD
+                jassert (pluginInstance.audioUnit != nullptr);
+          
+                // this should always be run on the message thread.
+                // we can get a setParameter from an IOThread which calls sendParameterChangeEvent().
+                // at the same time we can get a getParameter on the message thread which then blocks
+                // now we send an AUEventListenerrNotify here, main thread is blocked so deadlock on pluginInstance.lock
+          
+                // Capture of pluginInstance is a bit wonky and fails every so often so use vars
+                AudioUnit             useAudioUnit     = pluginInstance.audioUnit;
+                AudioUnitParameterID  useParamId       = paramID;
+                AUEventListenerRef    useEventListener = pluginInstance.eventListenerRef;
+          
+                std::function<void()> listenerNotify = [=] ()
+                {
+                  AudioUnitEvent ev;
+                  ev.mEventType                        = kAudioUnitEvent_ParameterValueChange;
+                  ev.mArgument.mParameter.mAudioUnit   = useAudioUnit;
+                  ev.mArgument.mParameter.mParameterID = useParamId;
+                  ev.mArgument.mParameter.mScope       = kAudioUnitScope_Global;
+                  ev.mArgument.mParameter.mElement     = 0;
+                  
+                  AUEventListenerNotify (useEventListener, nullptr, &ev);
+                };
+          
+                if (MessageManager::getInstance()->isThisTheMessageThread())
+                {
+                  listenerNotify();
+                }
+                else
+                {
+                  juce::MessageManager::callAsync(listenerNotify);
+                }
+              #else
+                jassert (pluginInstance.audioUnit != nullptr);
+      
+                AudioUnitEvent ev;
+                ev.mEventType                        = kAudioUnitEvent_ParameterValueChange;
+                ev.mArgument.mParameter.mAudioUnit   = pluginInstance.audioUnit;
+                ev.mArgument.mParameter.mParameterID = paramID;
+                ev.mArgument.mParameter.mScope       = kAudioUnitScope_Global;
+                ev.mArgument.mParameter.mElement     = 0;
+      
+                AUEventListenerNotify (pluginInstance.eventListenerRef, nullptr, &ev);
+              #endif
+            #endif
         }
 
         float normaliseParamValue (float scaledValue) const noexcept
         {
+            // TODO why was this removed by JUCE. if (discrete)
+            //    return scaledValue / (getNumSteps() - 1);
+
             return (scaledValue - minValue) / range;
         }
 
@@ -611,8 +703,9 @@ public:
         String name;
         const AudioUnitParameterValue minValue, maxValue, range;
         const bool automatable, discrete;
-        const int numSteps;
+              int numSteps;
         const bool valuesHaveStrings, isSwitch;
+        const bool isMeta;
         String valueLabel;
         const AudioUnitParameterValue defaultValue;
         StringArray auValueStrings;
@@ -713,6 +806,24 @@ public:
         return true;
     }
 
+    std::unique_ptr<Array<std::pair<int16_t, int16_t>>> getSupportedChannelInfo(void) override
+    {
+      std::unique_ptr<Array<std::pair<int16_t, int16_t>>> result = std::make_unique<Array<std::pair<int16_t, int16_t>>>();
+      for (int i = 0; i < numChannelInfos; ++i)
+      {
+          auto& auInfo = channelInfos[i];
+          result->add (std::make_pair(auInfo.inChannels, auInfo.outChannels));
+      }
+      
+      return result;
+    };
+
+    std::unique_ptr<Array<uint32_t>> getSupportedChannelTags(bool bIsInput) override
+    {
+      std::unique_ptr<Array<uint32_t>> result = std::make_unique<Array<uint32_t>>(bIsInput ? supportedInLayoutTags : supportedOutLayoutTags);
+      return result;
+    };
+
     //==============================================================================
     bool canAddBus (bool isInput)    const override                   { return isBusCountWritable (isInput); }
     bool canRemoveBus (bool isInput) const override                   { return isBusCountWritable (isInput); }
@@ -723,7 +834,8 @@ public:
         auto newCount = (UInt32) ((int) currentCount + (isAdding ? 1 : -1));
         AudioUnitScope scope = isInput ? kAudioUnitScope_Input : kAudioUnitScope_Output;
 
-        if (AudioUnitSetProperty (audioUnit, kAudioUnitProperty_ElementCount, scope, 0, &newCount, sizeof (newCount)) == noErr)
+        OSStatus status = AudioUnitSetProperty (audioUnit, kAudioUnitProperty_ElementCount, scope, 0, &newCount, sizeof (newCount));
+        if ( status== noErr)
         {
             getBusProperties (isInput, currentCount, outProperties.busName, outProperties.defaultLayout);
             outProperties.isActivatedByDefault = true;
@@ -746,7 +858,6 @@ public:
             const bool isInput = (dir == 0);
             auto& requestedLayouts         = (isInput ? layouts.inputBuses  : layouts.outputBuses);
             auto& oppositeRequestedLayouts = (isInput ? layouts.outputBuses : layouts.inputBuses);
-            auto& supported                = (isInput ? supportedInLayouts : supportedOutLayouts);
             const int n = getBusCount (isInput);
 
             for (int busIdx = 0; busIdx < n; ++busIdx)
@@ -755,18 +866,27 @@ public:
                 const int oppositeBusIdx = jmin (getBusCount (! isInput) - 1, busIdx);
                 const bool hasOppositeBus = (oppositeBusIdx >= 0);
                 auto oppositeRequested = (hasOppositeBus ? oppositeRequestedLayouts.getReference (oppositeBusIdx) : AudioChannelSet());
-                auto& possible = supported.getReference (busIdx);
 
                 if (requested.isDisabled())
-                    return false;
+                  return false;
+              
+#define CHANNELS_ONLY
+#ifndef CHANNELS_ONLY
+                // ARCCHANNELS
+                // Some plugins use defined layouts and also channelLayouts, so may support (0,-32) but do not supply full channelInfos
+                // defineing CHANNELS_ONLY will use the channelInfo only and not just base it on the layouts
 
+                auto& supported = (isInput ? supportedInLayouts : supportedOutLayouts);
+                auto& possible  = supported.getReference (busIdx);
+              
                 if (possible.size() > 0 && ! possible.contains (requested))
                     return false;
-
+#endif
+              
                 int i;
                 for (i = 0; i < numChannelInfos; ++i)
                 {
-                    auto& info = channelInfos[i];
+                    auto& info = channelInfos[i]; 
                     auto& thisChannels = (isInput ? info.inChannels  : info.outChannels);
                     auto& opChannels   = (isInput ? info.outChannels : info.inChannels);
 
@@ -800,6 +920,7 @@ public:
 
                 if (i >= numChannelInfos)
                     return false;
+
             }
         }
 
@@ -893,8 +1014,14 @@ public:
 
                         // try to convert the layout into a tag
                         actualTag = CoreAudioLayouts::toCoreAudio (CoreAudioLayouts::fromCoreAudio (layout));
-
-                        if (actualTag != requestedTag)
+                      
+                        // ARCCHANNEL sometimes we get a mismatch on layout but channel count is correct
+#define CHANNEL_COUNT_ONLY
+#ifdef CHANNEL_COUNT_ONLY
+                        if ((actualTag & 0xffff) != (requestedTag & 0xffff)) // just base on channel count
+#else
+                        if (actualTag != requestedTag) // base on layout tag
+#endif
                         {
                             zerostruct (layout);
                             layout.mChannelLayoutTag = requestedTag;
@@ -1394,7 +1521,7 @@ public:
 
     void changeProgramName (int /*index*/, const String& /*newName*/) override
     {
-        jassertfalse; // xxx not implemented!
+        //jassertfalse; // xxx not implemented!
     }
 
     //==============================================================================
@@ -1461,7 +1588,8 @@ public:
         }
     }
 
-    void refreshParameterList() override
+	// TODOMERGE lookat this method
+    bool refreshParameterList() override
     {
         paramIDToParameter.clear();
         AudioProcessorParameterGroup newParameterTree;
@@ -1475,7 +1603,7 @@ public:
             haveParameterList = (paramListSize > 0 && err == noErr);
 
             if (! haveParameterList)
-                return;
+                return false;
 
             if (paramListSize > 0)
             {
@@ -1491,16 +1619,51 @@ public:
                 for (size_t i = 0; i < numParams; ++i)
                 {
                     const ScopedAudioUnitParameterInfo info { audioUnit, ids[i] };
-
-                    if (! info.isValid())
+					if (! info.isValid())
                         continue;
+
 
                     const auto paramName = getParamName (info.get());
                     const auto label = getParamLabel (info.get());
+
+                        bool isMeta = info.flags & kAudioUnitParameterFlag_IsGlobalMeta;
+                      
                     const auto isDiscrete = (info.get().unit == kAudioUnitParameterUnit_Indexed
                                           || info.get().unit == kAudioUnitParameterUnit_Boolean);
                     const auto isBoolean = info.get().unit == kAudioUnitParameterUnit_Boolean;
 
+                        auto label = [info]() -> String
+                        {
+                            if (info.unit == kAudioUnitParameterUnit_Percent)             return "%";
+                            if (info.unit == kAudioUnitParameterUnit_Seconds)             return "s";
+                            if (info.unit == kAudioUnitParameterUnit_Hertz)               return "Hz";
+                            if (info.unit == kAudioUnitParameterUnit_Decibels)            return "dB";
+                            if (info.unit == kAudioUnitParameterUnit_Milliseconds)        return "ms";
+                            if (info.unit == kAudioUnitParameterUnit_EqualPowerCrossfade) return "%";
+                            if (info.unit == kAudioUnitParameterUnit_Boolean)             return "T/F";
+                            if (info.unit == kAudioUnitParameterUnit_Seconds)             return "Secs";
+                            if (info.unit == kAudioUnitParameterUnit_SampleFrames)        return "Samps";
+                            if ((info.unit == kAudioUnitParameterUnit_Phase) ||
+                               (info.unit == kAudioUnitParameterUnit_Degrees))            return "Degr.";
+                            if ((info.unit == kAudioUnitParameterUnit_Cents) ||
+                               (info.unit == kAudioUnitParameterUnit_AbsoluteCents))      return "Cents";
+                            if (info.unit == kAudioUnitParameterUnit_RelativeSemiTones)   return "S-T";
+                            if ((info.unit == kAudioUnitParameterUnit_MIDINoteNumber) ||
+                               (info.unit == kAudioUnitParameterUnit_MIDIController))     return "Midi";
+                            if ((info.unit == kAudioUnitParameterUnit_MixerFaderCurve1) ||
+                               (info.unit == kAudioUnitParameterUnit_LinearGain))         return "Gain";
+                            if (info.unit == kAudioUnitParameterUnit_Pan)                 return "L/R";
+                            if (info.unit == kAudioUnitParameterUnit_Meters)              return "Mtrs";
+                            if (info.unit == kAudioUnitParameterUnit_Octaves)             return "8ve";
+                            if (info.unit == kAudioUnitParameterUnit_BPM)                 return "BPM";
+                            if (info.unit == kAudioUnitParameterUnit_Beats)               return "Beats";
+                            if (info.unit == kAudioUnitParameterUnit_Ratio)               return "Ratio";
+                            if (info.unit == kAudioUnitParameterUnit_Rate)                return "Rate";
+                            if (info.unit == kAudioUnitParameterUnit_Indexed)             return "Indexed";
+                            if (info.unit == kAudioUnitParameterUnit_CustomUnit)          return String::fromCFString(info.unitName);
+
+                            return {};
+                        }();
                     auto parameter = std::make_unique<AUInstanceParameter> (*this,
                                                                             ids[i],
                                                                             paramName,
@@ -1512,7 +1675,8 @@ public:
                                                                             isDiscrete ? (int) (info.get().maxValue - info.get().minValue + 1.0f) : AudioProcessor::getDefaultNumParameterSteps(),
                                                                             isBoolean,
                                                                             label,
-                                                                            (info.get().flags & kAudioUnitParameterFlag_ValuesHaveStrings) != 0);
+                                                                   (info.flags & kAudioUnitParameterFlag_ValuesHaveStrings) != 0),
+                                                                   isMeta);
 
                     paramIDToParameter.emplace (ids[i], parameter.get());
 
@@ -1560,15 +1724,33 @@ public:
             }
         }
 
+        if(newParameterTree.differentTo(getParameterTree()))
+        {
         setHostedParameterTree (std::move (newParameterTree));
+          
+            // ok here we have the flatparameterlist with its wonky indexing so we need to fixup paramIDToIndex to match it
+            paramIDToIndex.clear();
+            auto parameters = getParameters();
+            for(auto param : getParameters())
+            {
+              printf("paramIdToIndex[%u] = %u\n", (uint32_t)param->getOrigParameterIndex(), (uint32_t)param->getParameterIndex());
+              paramIDToIndex.getReference ((uint32_t)param->getOrigParameterIndex()) = (size_t)param->getParameterIndex();
+            }
+          
+            UInt32 propertySize = 0;
+            Boolean writable = false;
+          
+            auSupportsBypass = (AudioUnitGetPropertyInfo (audioUnit, kAudioUnitProperty_BypassEffect,
+                                                          kAudioUnitScope_Global, 0, &propertySize, &writable) == noErr
+                                && propertySize >= sizeof (UInt32) && writable);
+            bypassParam.reset (new AUBypassParameter (*this));
+          
+            return true;
+        }
+        else
+            return false;
 
-        UInt32 propertySize = 0;
-        Boolean writable = false;
-
-        auSupportsBypass = (AudioUnitGetPropertyInfo (audioUnit, kAudioUnitProperty_BypassEffect,
-                                                     kAudioUnitScope_Global, 0, &propertySize, &writable) == noErr
-                              && propertySize >= sizeof (UInt32) && writable);
-        bypassParam.reset (new AUBypassParameter (*this));
+      
     }
 
     void updateLatency()
@@ -1724,7 +1906,8 @@ private:
     AudioTimeStamp timeStamp;
     AudioBuffer<float> inputBuffer;
     Array<Array<AudioChannelSet>> supportedInLayouts, supportedOutLayouts;
-
+    Array<AudioChannelLayoutTag> supportedInLayoutTags, supportedOutLayoutTags;
+  
     int numChannelInfos, preparedChannels = 0, preparedSamples = 0;
     HeapBlock<AUChannelInfo> channelInfos;
 
@@ -2234,6 +2417,9 @@ private:
     {
         supportedInLayouts.clear();
         supportedOutLayouts.clear();
+        supportedInLayoutTags.clear();
+        supportedOutLayoutTags.clear();
+
         numChannelInfos = 0;
         channelInfos.free();
 
@@ -2246,6 +2432,8 @@ private:
             for (int busIdx = 0; busIdx < n; ++busIdx)
             {
                 Array<AudioChannelSet> supported;
+                Array<AudioChannelLayoutTag> supportedTags;
+              
                 AudioChannelSet currentLayout;
 
                 {
@@ -2283,6 +2471,7 @@ private:
                             for (int j = 0; j < static_cast<int> (numElements); ++j)
                             {
                                 const AudioChannelLayoutTag tag = layoutTags[j];
+                                (isInput ? supportedInLayoutTags : supportedOutLayoutTags).add (tag);
 
                                 if (tag != kAudioChannelLayoutTag_UseChannelDescriptions)
                                 {
@@ -2316,13 +2505,32 @@ private:
 
                 if (AudioUnitGetProperty (audioUnit, kAudioUnitProperty_SupportedNumChannels, kAudioUnitScope_Global, 0, channelInfos.get(), &propertySize) != noErr)
                     numChannelInfos = 0;
+              
+                // we have an issue where juce takes precedence with the channellayouttags, so if the plugin is a bit dodgy and doesn't fill this out correctly
+                // then juce might not have all the layouts supported
+                for(int nC = 0; nC < numChannelInfos; nC++)
+                {
+                  if( (channelInfos[nC].inChannels < 0) || (channelInfos[nC].outChannels < 0))
+                  {
+                    // ok we are variable, from the AU docs:
+                    // {–1, –1} indicates that a bus supports any number of input or output channels provided that the input and output channel counts match each other. This is the default configuration for effect units.
+                    // {–1, –2} or {–2, –1} indicates that a bus supports any number of input and output channels; the channel counts on input and output can differ from each other.
+                    // {–1, –3} indicates that a bus supports any number of input channels and up to three output channels.
+
+                    // ARCCHANNELS
+                    
+                  }
+                }
             }
             else
             {
-                numChannelInfos = 1;
-                channelInfos.malloc (static_cast<size_t> (numChannelInfos));
-                channelInfos.get()->inChannels  = -1;
-                channelInfos.get()->outChannels = -1;
+                // this is dodgy, if no numChannel info then use default?? Only important fo our channelinfo stuff?? ARCPRECEDENCE ARCCHANNELS
+                // we may need a better way here, maybe direct access to au values.
+                numChannelInfos = 0;
+//                numChannelInfos = 1;
+//                channelInfos.malloc (static_cast<size_t> (numChannelInfos));
+//                channelInfos.get()->inChannels  = -1;
+//                channelInfos.get()->outChannels = -1;
             }
         }
     }
@@ -2439,7 +2647,7 @@ public:
 
     void paint (Graphics& g) override
     {
-        g.fillAll (Colours::white);
+      g.fillAll (Colours::black);
     }
 
     void resized() override

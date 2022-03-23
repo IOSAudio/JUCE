@@ -22,6 +22,8 @@
 
   ==============================================================================
 */
+// ARCFATAL
+#define JUCE_DISABLE_AUDIOPROCESSOR_BEGIN_END_GESTURE_CHECKING 1
 
 namespace juce
 {
@@ -46,6 +48,7 @@ class JUCE_API  AudioProcessor
 {
 protected:
     struct BusesProperties;
+    struct BusProperties;
 
     //==============================================================================
     /** Constructor.
@@ -83,6 +86,10 @@ public:
     //==============================================================================
     /** Destructor. */
     virtual ~AudioProcessor();
+  
+    //==============================================================================
+    /** Returns the plugin category of this processor. */
+    virtual const String getPluginCategory() const {return "";}
 
     //==============================================================================
     /** Returns the name of this processor. */
@@ -549,6 +556,12 @@ public:
     */
     bool addBus (bool isInput);
 
+    /** Dynamically add an additional bus. No checks, use BusProperties
+     
+       @see canApplyBusCountChange, removeBus
+       */
+    void addBus (bool isInput, BusProperties& busesProps);
+
     /** Dynamically remove the latest added bus.
 
         Request the removal of the last bus from the audio processor. If the
@@ -566,6 +579,14 @@ public:
         @see addBus, canRemoveBus
     */
     bool removeBus (bool isInput);
+
+  
+   /** Dynamically remove the latest added bus.
+       
+       Request the removal of the last bus from the audio processor. No checks
+       @see addBus, canRemoveBus
+       */
+  void removeBusNoChecks (bool inputBus);
 
     //==============================================================================
     /** Set the channel layouts of this audio processor.
@@ -839,6 +860,20 @@ public:
     /** Returns true if this is a MIDI effect plug-in and does no audio processing. */
     virtual bool isMidiEffect() const                           { return false; }
 
+    virtual bool isSynth() const
+#ifdef JucePlugin_IsSynth
+      { return JucePlugin_IsSynth; }
+#else
+      { return false; }
+#endif
+  
+    virtual int32_t getVSTUniqueId() const
+#ifdef JucePlugin_VSTUniqueID
+      { return JucePlugin_VSTUniqueID; }
+#else
+      { return -1; }
+#endif
+
     //==============================================================================
     /** This returns a critical section that will automatically be locked while the host
         is calling the processBlock() method.
@@ -1031,7 +1066,7 @@ public:
         For most plug-ins it's enough to simply add your parameters in the
         constructor and leave this unimplemented.
     */
-    virtual void refreshParameterList();
+    virtual bool refreshParameterList();
 
     /** Returns a flat list of the parameters in the current tree. */
     const Array<AudioProcessorParameter*>& getParameters() const;
@@ -1097,6 +1132,7 @@ public:
         @see setCurrentProgramStateInformation
     */
     virtual void setStateInformation (const void* data, int sizeInBytes) = 0;
+    virtual void setStateInformationWithProgramName (const void* data, int sizeInBytes, String sProgramName) { setStateInformation(data, sizeInBytes); };
 
     /** The host will call this method if it wants to restore the state of just the processor's
         current program.
@@ -1219,9 +1255,14 @@ public:
         AudioProcessor is loaded. */
     struct TrackProperties
     {
+        typedef enum {tsbTrue, tsbFalse, tsbNull} TriStateBool;
+      
         String name;    // The name of the track - this will be empty if the track name is not known
         Colour colour;  // The colour of the track - this will be transparentBlack if the colour is not known
-
+        int64  trackNumber = -1;
+        int64  pluginLocation = -1;
+        TriStateBool   isSelected = tsbNull;
+        TriStateBool   isFocused = tsbNull;
         // other properties may be added in the future
     };
 
@@ -1413,6 +1454,22 @@ public:
     [[deprecated]] virtual bool isInputChannelStereoPair  (int index) const;
     [[deprecated]] virtual bool isOutputChannelStereoPair (int index) const;
    #endif
+
+//  typedef struct ChannelInfo
+//  {
+//    int16_t    inChannels;
+//    int16_t    outChannels;
+//  } ChannelInfo;
+
+  virtual std::unique_ptr<Array<std::pair<int16_t, int16_t>>> getSupportedChannelInfo(void)
+  {
+    return nullptr;
+  };
+
+  virtual std::unique_ptr<Array<uint32_t>> getSupportedChannelTags(bool bIsInput)
+  {
+    return nullptr;
+  };
 
 private:
     //==============================================================================

@@ -193,6 +193,9 @@ AudioProcessorParameter::Category AudioPluginInstance::getParameterCategory (int
 
 void AudioPluginInstance::assertOnceOnDeprecatedMethodUse() const noexcept
 {
+  // CAD Change START
+  deprecationAssertiontriggered = true;
+  // CAD Change END
     if (! deprecationAssertiontriggered)
     {
         // If you hit this assertion then you are using at least one of the

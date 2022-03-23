@@ -82,6 +82,11 @@ bool AudioProcessor::addBus (bool isInput)
     return true;
 }
 
+void AudioProcessor::addBus (bool isInput, BusProperties& busesProps)
+{
+  createBus (isInput, busesProps);
+}
+
 bool AudioProcessor::removeBus (bool inputBus)
 {
     auto numBuses = getBusCount (inputBus);
@@ -103,6 +108,17 @@ bool AudioProcessor::removeBus (bool inputBus)
 
     audioIOChanged (true, numChannels > 0);
     return true;
+}
+
+void AudioProcessor::removeBusNoChecks (bool inputBus)
+{
+  auto numBuses = getBusCount (inputBus);
+  
+  auto busIndex = numBuses - 1;
+  auto numChannels = getChannelCountOfBus (inputBus, busIndex);
+  (inputBus ? inputBuses : outputBuses).remove (busIndex);
+  
+  audioIOChanged (true, numChannels > 0);
 }
 
 //==============================================================================
@@ -212,6 +228,12 @@ bool AudioProcessor::enableAllBuses()
 
 bool AudioProcessor::checkBusesLayoutSupported (const BusesLayout& layouts) const
 {
+  auto ib = inputBuses.size();
+  auto ob = outputBuses.size();
+  auto cib = layouts.inputBuses.size();
+  auto cob = layouts.outputBuses.size();
+
+//  printf("checkBusesLayoutSupported %u, %u looking for %u, %u\n", ib, ob, cib, cob);
     if (layouts.inputBuses.size() == inputBuses.size()
           && layouts.outputBuses.size() == outputBuses.size())
         return isBusesLayoutSupported (layouts);
@@ -557,7 +579,10 @@ void AudioProcessor::setParameterTree (AudioProcessorParameterGroup&& newTree)
     }
 }
 
-void AudioProcessor::refreshParameterList() {}
+bool AudioProcessor::refreshParameterList()
+{
+  return false;
+}
 
 int AudioProcessor::getDefaultNumParameterSteps() noexcept
 {
@@ -828,6 +853,8 @@ bool AudioProcessor::applyBusLayouts (const BusesLayout& layouts)
 
 void AudioProcessor::audioIOChanged (bool busNumberChanged, bool channelNumChanged)
 {
+    // ARCFATAL but channel layouts not updated for dynamic buses!
+  
     auto numInputBuses  = getBusCount (true);
     auto numOutputBuses = getBusCount (false);
 
@@ -854,6 +881,11 @@ void AudioProcessor::audioIOChanged (bool busNumberChanged, bool channelNumChang
     cachedTotalIns  = countTotalChannels (inputBuses);
     cachedTotalOuts = countTotalChannels (outputBuses);
 
+//  printf("audioIOChanged : %p CACHED_IN = %u, CACHED_OUT = %u\n", this, cachedTotalIns, cachedTotalOuts);
+//  
+//    if(cachedTotalIns == 1 && cachedTotalOuts == 1)
+//      int bp =1;
+  
     updateSpeakerFormatStrings();
 
     if (busNumberChanged)
@@ -1070,7 +1102,7 @@ bool AudioProcessor::Bus::isLayoutSupported (const AudioChannelSet& set, BusesLa
             *ioLayout = owner.getBusesLayout();
 
             // the current layout you supplied is not a valid layout
-            jassertfalse;
+            //ARCFATAL jassertfalse;
         }
     }
 
@@ -1298,7 +1330,7 @@ void AudioProcessor::beginParameterChangeGesture (int parameterIndex)
            #if JUCE_DEBUG && ! JUCE_DISABLE_AUDIOPROCESSOR_BEGIN_END_GESTURE_CHECKING
             // This means you've called beginParameterChangeGesture twice in succession without a matching
             // call to endParameterChangeGesture. That might be fine in most hosts, but better to avoid doing it.
-            jassert (! changingParams[parameterIndex]);
+            //ARCJUCE jassert (! changingParams[parameterIndex]);
             changingParams.setBit (parameterIndex);
            #endif
 
