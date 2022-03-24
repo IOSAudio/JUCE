@@ -117,7 +117,7 @@ struct AudioUnitHelpers
     public:
         void prepare (const AudioProcessor::BusesLayout& layout, int maxFrames)
         {
-            printf("PREPARE %d, %d, %d\n", inChannels, outChannels, maxFrames);
+            //printf("PREPARE %d, %d, %d\n", inChannels, outChannels, maxFrames);
             const auto getChannelOffsets = [] (const auto& range)
             {
                 std::vector<int> result { 0 };
@@ -475,11 +475,12 @@ struct AudioUnitHelpers
         {
           for(int output = hasMainOutputBus ? mainBusBaseChannel : 0; bValidSeq && output <= maxNumOutputs; output++)
           {
-            int n = ((input << 16) + output);
-            if(supportedChannels[nIndex] != n)
-              bValidSeq = false;
-            else
-              nIndex++;
+            //TODOMERGE recode this for set
+//            int n = ((input << 16) + output);
+//            if(supportedChannels[nIndex]. != n)
+//              bValidSeq = false;
+//            else
+//              nIndex++;
           }
         }
       

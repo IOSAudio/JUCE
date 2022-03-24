@@ -25,7 +25,6 @@
 
 #include "../../Application/jucer_Headers.h"
 
- const char* getPreferredLineFeed() { return "\n"; }
 //==============================================================================
 String joinLinesIntoSourceFile (StringArray& lines)
 {

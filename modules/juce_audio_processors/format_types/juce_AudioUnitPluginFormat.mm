@@ -1591,7 +1591,7 @@ public:
 	// TODOMERGE lookat this method
     bool refreshParameterList() override
     {
-        paramIDToParameter.clear();
+        std::map<UInt32, AUInstanceParameter*> newParamIDToParameter;
         AudioProcessorParameterGroup newParameterTree;
 
         if (audioUnit != nullptr)
@@ -1619,51 +1619,19 @@ public:
                 for (size_t i = 0; i < numParams; ++i)
                 {
                     const ScopedAudioUnitParameterInfo info { audioUnit, ids[i] };
-					if (! info.isValid())
+                    if (! info.isValid())
                         continue;
 
 
                     const auto paramName = getParamName (info.get());
                     const auto label = getParamLabel (info.get());
 
-                        bool isMeta = info.flags & kAudioUnitParameterFlag_IsGlobalMeta;
+                    bool isMeta = info.get().flags & kAudioUnitParameterFlag_IsGlobalMeta;
                       
                     const auto isDiscrete = (info.get().unit == kAudioUnitParameterUnit_Indexed
                                           || info.get().unit == kAudioUnitParameterUnit_Boolean);
                     const auto isBoolean = info.get().unit == kAudioUnitParameterUnit_Boolean;
 
-                        auto label = [info]() -> String
-                        {
-                            if (info.unit == kAudioUnitParameterUnit_Percent)             return "%";
-                            if (info.unit == kAudioUnitParameterUnit_Seconds)             return "s";
-                            if (info.unit == kAudioUnitParameterUnit_Hertz)               return "Hz";
-                            if (info.unit == kAudioUnitParameterUnit_Decibels)            return "dB";
-                            if (info.unit == kAudioUnitParameterUnit_Milliseconds)        return "ms";
-                            if (info.unit == kAudioUnitParameterUnit_EqualPowerCrossfade) return "%";
-                            if (info.unit == kAudioUnitParameterUnit_Boolean)             return "T/F";
-                            if (info.unit == kAudioUnitParameterUnit_Seconds)             return "Secs";
-                            if (info.unit == kAudioUnitParameterUnit_SampleFrames)        return "Samps";
-                            if ((info.unit == kAudioUnitParameterUnit_Phase) ||
-                               (info.unit == kAudioUnitParameterUnit_Degrees))            return "Degr.";
-                            if ((info.unit == kAudioUnitParameterUnit_Cents) ||
-                               (info.unit == kAudioUnitParameterUnit_AbsoluteCents))      return "Cents";
-                            if (info.unit == kAudioUnitParameterUnit_RelativeSemiTones)   return "S-T";
-                            if ((info.unit == kAudioUnitParameterUnit_MIDINoteNumber) ||
-                               (info.unit == kAudioUnitParameterUnit_MIDIController))     return "Midi";
-                            if ((info.unit == kAudioUnitParameterUnit_MixerFaderCurve1) ||
-                               (info.unit == kAudioUnitParameterUnit_LinearGain))         return "Gain";
-                            if (info.unit == kAudioUnitParameterUnit_Pan)                 return "L/R";
-                            if (info.unit == kAudioUnitParameterUnit_Meters)              return "Mtrs";
-                            if (info.unit == kAudioUnitParameterUnit_Octaves)             return "8ve";
-                            if (info.unit == kAudioUnitParameterUnit_BPM)                 return "BPM";
-                            if (info.unit == kAudioUnitParameterUnit_Beats)               return "Beats";
-                            if (info.unit == kAudioUnitParameterUnit_Ratio)               return "Ratio";
-                            if (info.unit == kAudioUnitParameterUnit_Rate)                return "Rate";
-                            if (info.unit == kAudioUnitParameterUnit_Indexed)             return "Indexed";
-                            if (info.unit == kAudioUnitParameterUnit_CustomUnit)          return String::fromCFString(info.unitName);
-
-                            return {};
-                        }();
                     auto parameter = std::make_unique<AUInstanceParameter> (*this,
                                                                             ids[i],
                                                                             paramName,
@@ -1675,10 +1643,10 @@ public:
                                                                             isDiscrete ? (int) (info.get().maxValue - info.get().minValue + 1.0f) : AudioProcessor::getDefaultNumParameterSteps(),
                                                                             isBoolean,
                                                                             label,
-                                                                   (info.flags & kAudioUnitParameterFlag_ValuesHaveStrings) != 0),
-                                                                   isMeta);
+                                                                            (info.get().flags & kAudioUnitParameterFlag_ValuesHaveStrings) != 0,
+                                                                            isMeta);
 
-                    paramIDToParameter.emplace (ids[i], parameter.get());
+                    newParamIDToParameter.emplace (ids[i], parameter.get());
 
                     if (info.get().flags & kAudioUnitParameterFlag_HasClump)
                     {
@@ -1724,19 +1692,14 @@ public:
             }
         }
 
+
         if(newParameterTree.differentTo(getParameterTree()))
         {
-        setHostedParameterTree (std::move (newParameterTree));
           
-            // ok here we have the flatparameterlist with its wonky indexing so we need to fixup paramIDToIndex to match it
-            paramIDToIndex.clear();
-            auto parameters = getParameters();
-            for(auto param : getParameters())
-            {
-              printf("paramIdToIndex[%u] = %u\n", (uint32_t)param->getOrigParameterIndex(), (uint32_t)param->getParameterIndex());
-              paramIDToIndex.getReference ((uint32_t)param->getOrigParameterIndex()) = (size_t)param->getParameterIndex();
-            }
+            paramIDToParameter.clear();
+            paramIDToParameter = newParamIDToParameter;
           
+            setHostedParameterTree (std::move (newParameterTree));
             UInt32 propertySize = 0;
             Boolean writable = false;
           
@@ -1744,12 +1707,28 @@ public:
                                                           kAudioUnitScope_Global, 0, &propertySize, &writable) == noErr
                                 && propertySize >= sizeof (UInt32) && writable);
             bypassParam.reset (new AUBypassParameter (*this));
+
+            // ARCMERGE look at this
+
+            // ok here we have the flatparameterlist with its wonky indexing so we need to fixup paramIDToIndex to match it
+            // this may be fixed now after merge, lets test
+          
+//            paramIDToParameter.clear();
+//            auto parameters = getParameters();
+//            for(auto param : getParameters())
+//            {
+//              printf("paramIDToParameter[%u] = %u\n", (uint32_t)param->getOrigParameterIndex(), (uint32_t)param->getParameterIndex());
+//              jassert (dynamic_cast<AUInstanceParameter*> (param) != nullptr);
+//              paramIDToParameter.emplace((UInt32)param->getOrigParameterIndex(), dynamic_cast<AUInstanceParameter*> (param));
+//            }
+          
           
             return true;
         }
         else
+        {
             return false;
-
+        }
       
     }
 
@@ -2148,6 +2127,28 @@ private:
         if (info.unit == kAudioUnitParameterUnit_Hertz)         return "Hz";
         if (info.unit == kAudioUnitParameterUnit_Decibels)      return "dB";
         if (info.unit == kAudioUnitParameterUnit_Milliseconds)  return "ms";
+        if (info.unit == kAudioUnitParameterUnit_EqualPowerCrossfade) return "%";
+        if (info.unit == kAudioUnitParameterUnit_Boolean)             return "T/F";
+        if (info.unit == kAudioUnitParameterUnit_Seconds)             return "Secs";
+        if (info.unit == kAudioUnitParameterUnit_SampleFrames)        return "Samps";
+        if ((info.unit == kAudioUnitParameterUnit_Phase) ||
+           (info.unit == kAudioUnitParameterUnit_Degrees))            return "Degr.";
+        if ((info.unit == kAudioUnitParameterUnit_Cents) ||
+           (info.unit == kAudioUnitParameterUnit_AbsoluteCents))      return "Cents";
+        if (info.unit == kAudioUnitParameterUnit_RelativeSemiTones)   return "S-T";
+        if ((info.unit == kAudioUnitParameterUnit_MIDINoteNumber) ||
+           (info.unit == kAudioUnitParameterUnit_MIDIController))     return "Midi";
+        if ((info.unit == kAudioUnitParameterUnit_MixerFaderCurve1) ||
+           (info.unit == kAudioUnitParameterUnit_LinearGain))         return "Gain";
+        if (info.unit == kAudioUnitParameterUnit_Pan)                 return "L/R";
+        if (info.unit == kAudioUnitParameterUnit_Meters)              return "Mtrs";
+        if (info.unit == kAudioUnitParameterUnit_Octaves)             return "8ve";
+        if (info.unit == kAudioUnitParameterUnit_BPM)                 return "BPM";
+        if (info.unit == kAudioUnitParameterUnit_Beats)               return "Beats";
+        if (info.unit == kAudioUnitParameterUnit_Ratio)               return "Ratio";
+        if (info.unit == kAudioUnitParameterUnit_Rate)                return "Rate";
+        if (info.unit == kAudioUnitParameterUnit_Indexed)             return "Indexed";
+        if (info.unit == kAudioUnitParameterUnit_CustomUnit)          return String::fromCFString(info.unitName);
 
         return {};
     }

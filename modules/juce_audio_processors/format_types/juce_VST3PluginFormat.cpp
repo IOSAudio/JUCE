@@ -2103,7 +2103,7 @@ public:
 
         String getText (float value, int maximumLength) const override
         {
-            MessageManagerLock lock;
+            // MessageManagerLock lock;
 
             if (pluginInstance.editController != nullptr)
             {
@@ -2118,7 +2118,7 @@ public:
 
         float getValueForText (const String& text) const override
         {
-            MessageManagerLock lock;
+            // MessageManagerLock lock;
 
             if (pluginInstance.editController != nullptr)
             {
@@ -2183,13 +2183,13 @@ public:
         const Steinberg::int32 vstParamIndex;
         const Steinberg::Vst::ParamID paramID;
         const bool automatable;
-        const bool discrete = getNumSteps() != AudioProcessor::getDefaultNumParameterSteps();
         const int numSteps = [&]
         {
             auto stepCount = getParameterInfo().stepCount;
             return stepCount == 0 ? AudioProcessor::getDefaultNumParameterSteps()
                                   : stepCount + 1;
         }();
+        const bool discrete = getNumSteps() != AudioProcessor::getDefaultNumParameterSteps();
     };
 
     //==============================================================================
@@ -3103,17 +3103,19 @@ private:
                 return stream;
             }
         }
-
-        return nullptr;
+      
+      return nullptr;
     }
 
+    static VSTComSmartPtr<VST3MemoryStream> createVST3MemoryStreamForState (XmlElement& head, StringRef identifier)
+    {
       if (auto* state = head.getChildByName (identifier))
       {
         MemoryBlock mem;
         
         if (mem.fromBase64Encoding (state->getAllSubText()))
         {
-          ComSmartPtr<VST3MemoryStream> stream (new VST3MemoryStream(), false);
+          VSTComSmartPtr<VST3MemoryStream> stream (new VST3MemoryStream(), false);
           stream->setSize ((TSize) mem.getSize());
           mem.copyTo (stream->getData(), 0, mem.getSize());
           return stream;
@@ -3122,7 +3124,10 @@ private:
       
       return nullptr;
     }
-
+	
+	CachedParamValues cachedParamValues;
+    VSTComSmartPtr<ParameterChanges> inputParameterChanges  { new ParameterChanges };
+	
     VSTComSmartPtr<ParameterChanges> outputParameterChanges { new ParameterChanges };
     VSTComSmartPtr<MidiEventList> midiInputs, midiOutputs;
     Vst::ProcessContext timingInfo; //< Only use this in processBlock()!
@@ -3225,6 +3230,7 @@ private:
 	                auto* vst3Param = static_cast<VST3Parameter*> (parameter);
 	                result.emplace (vst3Param->getParamID(), vst3Param);
 	            }
+              return result;
 	        }();
 		
 			return true;
@@ -3699,39 +3705,39 @@ tresult VST3HostContext::notifyProgramListChange (Vst::ProgramListID, Steinberg:
 
 //==============================================================================
 //TODOMERGE is this not used anymore??
-int VST3HostContext::getIndexOfParamID (Vst::ParamID paramID)
-{
-    if (plugin == nullptr || plugin->editController == nullptr)
-        return -1;
-
-    auto result = getMappedParamID (paramID);
-
-    if (result < 0)
-    {
-        const Array<AudioProcessorParameter *> &parameters = plugin->getParameters();
-      
-        for (int i = 0; i < parameters.size(); ++i)
-        {
-            paramToIndexMap[(Vst::ParamID)parameters[i]->getOrigParameterIndex()] = i;
-        }
-        result = getMappedParamID (paramID);
-
-//        auto numParams = plugin->editController->getParameterCount();
+//int VST3HostContext::getIndexOfParamID (Vst::ParamID paramID)
+//{
+//    if (plugin == nullptr || plugin->editController == nullptr)
+//        return -1;
 //
-//        for (int i = 0; i < numParams; ++i) //this looks wrong!!!
+//    auto result = getMappedParamID (paramID);
+//
+//    if (result < 0)
+//    {
+//        const Array<AudioProcessorParameter *> &parameters = plugin->getParameters();
+//      
+//        for (int i = 0; i < parameters.size(); ++i)
 //        {
-//            Vst::ParameterInfo paramInfo;
-//
-//            plugin->editController->getParameterInfo (i, paramInfo);
-//            paramToIndexMap[paramInfo.id] = i;
-//            CADLogInfo("[%d] = [%u]", i, paramInfo.id);
+//            paramToIndexMap[(Vst::ParamID)parameters[i]->getOrigParameterIndex()] = i;
 //        }
-//
 //        result = getMappedParamID (paramID);
-    }
-
-    return result;
-}
+//
+////        auto numParams = plugin->editController->getParameterCount();
+////
+////        for (int i = 0; i < numParams; ++i) //this looks wrong!!!
+////        {
+////            Vst::ParameterInfo paramInfo;
+////
+////            plugin->editController->getParameterInfo (i, paramInfo);
+////            paramToIndexMap[paramInfo.id] = i;
+////            CADLogInfo("[%d] = [%u]", i, paramInfo.id);
+////        }
+////
+////        result = getMappedParamID (paramID);
+//    }
+//
+//    return result;
+//}
 
 //==============================================================================
 VST3PluginFormat::VST3PluginFormat() {}

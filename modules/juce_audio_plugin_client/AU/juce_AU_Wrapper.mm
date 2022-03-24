@@ -869,6 +869,8 @@ public:
 
     UInt32 GetChannelLayoutTags (AudioUnitScope scope, AudioUnitElement element, AudioChannelLayoutTag* outLayoutTags) override
     {
+	   bool isInput;
+	
         const auto info = getElementInfo (scope, element);
 
         if (info.error != noErr)

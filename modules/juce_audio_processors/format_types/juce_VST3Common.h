@@ -1131,6 +1131,7 @@ public:
         }
     }
 
+private:
     static constexpr size_t numFlagBits = 8 * sizeof (FlagType);
 
     static constexpr size_t divCeil (size_t a, size_t b)
@@ -1162,6 +1163,7 @@ public:
 
     size_t size() const noexcept { return floatCache.size(); }
 
+    Steinberg::Vst::ParamID getParamID (Steinberg::int32 index) const noexcept { return paramIds[(size_t) index]; }
 
     void set                 (Steinberg::int32 index, float value)   { floatCache.set                 ((size_t) index, value); }
     void setWithoutNotifying (Steinberg::int32 index, float value)   { floatCache.setWithoutNotifying ((size_t) index, value); }
@@ -1171,9 +1173,13 @@ public:
     template <typename Callback>
     void ifSet (Callback&& callback)
     {
+        floatCache.ifSet ([&] (size_t index, float value)
         {
+            callback ((Steinberg::int32) index, value);
         });
     }
+
+private:
     std::vector<Steinberg::Vst::ParamID> paramIds;
     FloatCache floatCache;
 };
@@ -1182,6 +1188,7 @@ public:
 class ComponentRestarter : private AsyncUpdater
 {
 public:
+    struct Listener
     {
         virtual ~Listener() = default;
         virtual void restartComponentOnMessageThread (int32 flags) = 0;
@@ -1195,6 +1202,7 @@ public:
         cancelPendingUpdate();
     }
 
+    void restart (int32 newFlags)
     {
         if (newFlags == 0)
             return;
@@ -1204,13 +1212,16 @@ public:
         if (MessageManager::getInstance()->isThisTheMessageThread())
             handleAsyncUpdate();
         else
-    hostAttributes.setString(Steinberg::Vst::PresetAttributes::kName, presetName);
+            triggerAsyncUpdate();
+    }
+
 private:
     void handleAsyncUpdate() override
     {
         listener.restartComponentOnMessageThread (flags.exchange (0));
     }
-  Steinberg::Vst::HostAttributeList hostAttributes;
+
+    Listener& listener;
     std::atomic<int32> flags { 0 };
 };
 
