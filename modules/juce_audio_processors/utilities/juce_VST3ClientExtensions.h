@@ -95,5 +95,4 @@ struct VST3ClientExtensions
     */
     virtual bool getPluginHasMainInput() const  { return true; }
 };
-
 } // namespace juce

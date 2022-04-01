@@ -57,10 +57,11 @@ JUCE_BEGIN_NO_SANITIZE ("vptr")
 #include <juce_audio_processors/format_types/pslextensions/ipslcontextinfo.h>
 #include <juce_audio_processors/format_types/pslextensions/ipsleditcontroller.h>
 
-DEF_CLASS_IID(Presonus::IGainReductionInfo)
-DEF_CLASS_IID (Presonus::IContextInfoHandler)
-DEF_CLASS_IID (Presonus::IContextInfoHandler2)
-DEF_CLASS_IID (Presonus::IContextInfoProvider)
+//DEF_CLASS_IID(Presonus::IGainReductionInfo)
+//DEF_CLASS_IID (Presonus::IContextInfoHandler)
+//DEF_CLASS_IID (Presonus::IContextInfoHandler2)
+//DEF_CLASS_IID (Presonus::IContextInfoProvider)
+//DEF_CLASS_IID (Presonus::IContextInfoProvider2)
 
 #ifndef JUCE_VST3_CAN_REPLACE_VST2
  #define JUCE_VST3_CAN_REPLACE_VST2 1
@@ -100,6 +101,8 @@ namespace juce
 {
 
 using namespace Steinberg;
+
+static AudioProcessor* gQueryInterfaceAudioProcessor = nullptr;
 
 //==============================================================================
 #if JUCE_MAC
@@ -651,6 +654,7 @@ static void setValueAndNotifyIfChanged (AudioProcessorParameter& param, float ne
     param.setValueNotifyingHost (newValue);
 }
 
+
 //==============================================================================
 class JuceVST3EditController : public Vst::EditController,
                                public Vst::IMidiMapping,
@@ -664,10 +668,12 @@ class JuceVST3EditController : public Vst::EditController,
                                //private AudioProcessorParameter::Listener
 {
 public:
-    JuceVST3EditController (Vst::IHostApplication* host)
+    JuceVST3EditController (Vst::IHostApplication* host, AudioProcessor* queryInterfaceAudioProcessorToUse)
     {
         if (host != nullptr)
             host->queryInterface (FUnknown::iid, (void**) &hostContext);
+      
+        queryInterfaceAudioProcessor = queryInterfaceAudioProcessorToUse;
     }
 
     //==============================================================================
@@ -682,14 +688,26 @@ public:
 
     tresult PLUGIN_API queryInterface (const TUID targetIID, void** obj) override
     {
-        const auto userProvidedInterface = queryAdditionalInterfaces (getPluginInstance(),
-                                                                      targetIID,
-                                                                      &VST3ClientExtensions::queryIEditController);
-
+        FUID fuid = Steinberg::FUID::fromTUID(targetIID);
+        printf("%x, %x, %x, %x\n", fuid.getLong1(), fuid.getLong3(), fuid.getLong3(), fuid.getLong4());
+      
+        QueryInterfaceResult userProvidedInterface;
+        if(queryInterfaceAudioProcessor)
+        {
+          userProvidedInterface = queryAdditionalInterfaces (queryInterfaceAudioProcessor,
+                                                             targetIID,
+                                                             &VST3ClientExtensions::queryIEditController);
+        }
+        else
+        {
+            userProvidedInterface = queryAdditionalInterfaces (getPluginInstance(),
+                                                               targetIID,
+                                                               &VST3ClientExtensions::queryIEditController);
+        }
+      
         const auto juceProvidedInterface = queryInterfaceInternal (targetIID);
 
         return extractResult (userProvidedInterface, juceProvidedInterface, obj);
-
 		// TODOMERGE THIS needs moving into the new code
 #ifdef OLD
         TEST_FOR_AND_RETURN_IF_VALID (targetIID, Presonus::IContextInfoHandler)
@@ -710,7 +728,7 @@ public:
         *obj = nullptr;
         return kNoInterface;
 #endif
-}
+    }
 
     //==============================================================================
     tresult PLUGIN_API initialize (FUnknown* context) override
@@ -731,64 +749,125 @@ public:
         return EditController::terminate();
     }
 
-
-    void PLUGIN_API notifyContextInfoChange() override
+    void GetTrackProperties()
     {
-      printf("notifyContextInfoChange\n");
-
-      // interested in index, selected, focused
       FUnknownPtr<Presonus::IContextInfoProvider> contextInfoProvider (componentHandler);
       AudioProcessor *instance = getPluginInstance();
+
       if(contextInfoProvider && instance)
       {
         AudioProcessor::TrackProperties trackProperties;
 
-        //contextInfoProvider->getContextInfoValue (trackProperties.channelIndex, Presonus::ContextInfo::kIndex);
+        bool bSendUpdate = false;
+        
+        int32 channelIndex = 0;
+        contextInfoProvider->getContextInfoValue (channelIndex, Presonus::ContextInfo::kIndex);
+        if(trackProperties.trackNumber != channelIndex)
+        {
+          trackProperties.trackNumber = channelIndex;
+          bSendUpdate = true;
+        }
 
-				Steinberg::int32 isFocused;
-				Steinberg::int32 isSelected;
-
+        Steinberg::int32 isSelected;
         contextInfoProvider->getContextInfoValue (isSelected, Presonus::ContextInfo::kSelected);
+        if(trackProperties.isSelected != (AudioProcessor::TrackProperties::TriStateBool)(isSelected == 1))
+        {
+          trackProperties.isSelected = (AudioProcessor::TrackProperties::TriStateBool)(isSelected == 1);
+          bSendUpdate = true;
+        }
+        
+        Steinberg::int32 isFocused;
         contextInfoProvider->getContextInfoValue (isFocused, Presonus::ContextInfo::kFocused);
+        if(trackProperties.isSelected != (AudioProcessor::TrackProperties::TriStateBool)(isSelected == 1))
+        {
+          trackProperties.isFocused = (AudioProcessor::TrackProperties::TriStateBool)(isFocused == 1);
+          bSendUpdate = true;
+        }
+        
+        Steinberg::Vst::TChar channelName[128] = {0};
+        
+        contextInfoProvider->getContextInfoString (channelName, 128, Presonus::ContextInfo::kName);
+        if(trackProperties.name != juce::String (juce::CharPointer_UTF16 (reinterpret_cast<const juce::CharPointer_UTF16::CharType*> (channelName))))
+        {
+          trackProperties.name = juce::String (juce::CharPointer_UTF16 (reinterpret_cast<const juce::CharPointer_UTF16::CharType*> (channelName)));
+          bSendUpdate = true;
+        }
 
-        trackProperties.isFocused  = (AudioProcessor::TrackProperties::TriStateBool)(isFocused  == 1);
-        trackProperties.isSelected = (AudioProcessor::TrackProperties::TriStateBool)(isSelected == 1);
-
-        if (MessageManager::getInstance()->isThisTheMessageThread())
-          instance->updateTrackProperties (trackProperties);
-        else
-          MessageManager::callAsync ([trackProperties, instance]
-                                     { instance->updateTrackProperties (trackProperties); });
+//        String str("shit");
+//
+//        Steinberg::tresult res = contextInfoProvider->setContextInfoString(Presonus::ContextInfo::kName, toString(str));
+        
+        if(bSendUpdate)
+        {
+          if (MessageManager::getInstance()->isThisTheMessageThread())
+            instance->updateTrackProperties (trackProperties);
+          else
+            MessageManager::callAsync ([trackProperties, instance]
+                                       { instance->updateTrackProperties (trackProperties); });
+        }
       }
+    }
+
+    void PLUGIN_API notifyContextInfoChange() override
+    {
+      printf("notifyContextInfoChange\n");
+      GetTrackProperties();
+      
+//      // interested in index, selected, focused
+//      FUnknownPtr<Presonus::IContextInfoProvider> contextInfoProvider (componentHandler);
+//      AudioProcessor *instance = getPluginInstance();
+//      if(contextInfoProvider && instance)
+//      {
+//        AudioProcessor::TrackProperties trackProperties;
+//
+//        //contextInfoProvider->getContextInfoValue (trackProperties.channelIndex, Presonus::ContextInfo::kIndex);
+//
+//				Steinberg::int32 isFocused;
+//				Steinberg::int32 isSelected;
+//
+//        contextInfoProvider->getContextInfoValue (isSelected, Presonus::ContextInfo::kSelected);
+//        contextInfoProvider->getContextInfoValue (isFocused, Presonus::ContextInfo::kFocused);
+//
+//        trackProperties.isFocused  = (AudioProcessor::TrackProperties::TriStateBool)(isFocused  == 1);
+//        trackProperties.isSelected = (AudioProcessor::TrackProperties::TriStateBool)(isSelected == 1);
+//
+//        if (MessageManager::getInstance()->isThisTheMessageThread())
+//          instance->updateTrackProperties (trackProperties);
+//        else
+//          MessageManager::callAsync ([trackProperties, instance]
+//                                     { instance->updateTrackProperties (trackProperties); });
+//      }
     }
 
     void PLUGIN_API notifyContextInfoChange (Steinberg::FIDString id) override
     {
       printf("notifyContextInfoChange with id (%s)\n", id);
-      FUnknownPtr<Presonus::IContextInfoProvider> contextInfoProvider (componentHandler);
+      FUnknownPtr<Presonus::IContextInfoProvider2> contextInfoProvider (componentHandler);
       AudioProcessor *instance = getPluginInstance();
 
       if(contextInfoProvider && instance)
       {
         AudioProcessor::TrackProperties trackProperties;
 
-//        if(FIDStringsEqual(id, Presonus::ContextInfo::kIndex))
-//        {
-//          int32 channelIndex = 0;
-//          contextInfoProvider->getContextInfoValue (channelIndex, Presonus::ContextInfo::kIndex);
-//          pAudioProcessor->setChannelNumber(channelIndex);
-//        }
-
+        bool bEverything = FIDStringsEqual(id, "");
         bool bSendUpdate = false;
-        if(FIDStringsEqual(id, Presonus::ContextInfo::kSelected))
+        
+        if(bEverything || FIDStringsEqual(id, Presonus::ContextInfo::kIndex))
+        {
+          int32 channelIndex = 0;
+          contextInfoProvider->getContextInfoValue (channelIndex, Presonus::ContextInfo::kIndex);
+          trackProperties.trackNumber = channelIndex;
+        }
+
+        if(bEverything || FIDStringsEqual(id, Presonus::ContextInfo::kSelected))
         {
           Steinberg::int32 isSelected;
           contextInfoProvider->getContextInfoValue (isSelected, Presonus::ContextInfo::kSelected);
           trackProperties.isSelected = (AudioProcessor::TrackProperties::TriStateBool)(isSelected == 1);
           bSendUpdate = true;
         }
-
-        if(FIDStringsEqual(id, Presonus::ContextInfo::kFocused))
+        
+        if(bEverything || FIDStringsEqual(id, Presonus::ContextInfo::kFocused))
         {
           Steinberg::int32 isFocused;
           contextInfoProvider->getContextInfoValue (isFocused, Presonus::ContextInfo::kFocused);
@@ -796,6 +875,19 @@ public:
           bSendUpdate = true;
         }
 
+        if(bEverything || FIDStringsEqual(id, Presonus::ContextInfo::kName))
+        {
+          Steinberg::Vst::TChar channelName[128] = {0};
+          
+          contextInfoProvider->getContextInfoString (channelName, 128, Presonus::ContextInfo::kName);
+          trackProperties.name = juce::String (juce::CharPointer_UTF16 (reinterpret_cast<const juce::CharPointer_UTF16::CharType*> (channelName)));
+          bSendUpdate = true;
+        }
+
+//        String str("shit");
+//
+//        Steinberg::tresult res = contextInfoProvider->setContextInfoString(Presonus::ContextInfo::kName, toString(str));
+        
         if(bSendUpdate)
         {
           if (MessageManager::getInstance()->isThisTheMessageThread())
@@ -932,7 +1024,6 @@ public:
     private:
         JuceVST3EditController& owner;
         AudioProcessorParameter& param;
-
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Param)
     };
 
@@ -1465,7 +1556,8 @@ private:
     MidiController parameterToMidiController[(int) numMIDIChannels * (int) Vst::kCountCtrlNumber];
     Vst::ParamID midiControllerToParameter[numMIDIChannels][Vst::kCountCtrlNumber];
     Array<int> metersParamIDs;
-
+    AudioProcessor *queryInterfaceAudioProcessor = nullptr;
+  
     void restartComponentOnMessageThread (int32 flags) override
     {
         if ((flags & pluginShouldBeMarkedDirtyFlag) != 0)
@@ -1540,6 +1632,9 @@ private:
                                              UniqueBase<Vst::IMidiMapping>{},
                                              UniqueBase<Vst::IUnitInfo>{},
                                              UniqueBase<Vst::ChannelContext::IInfoListener>{},
+                                             //ARCFATALNOW UniqueBase<Presonus::IGainReductionInfo>{},
+                                             //ARCFATALNOW UniqueBase<Presonus::IContextInfoHandler>{},
+                                             //ARCFATALNOW UniqueBase<Presonus::IContextInfoHandler2>{},
                                              SharedBase<IPluginBase, Vst::IEditController>{},
                                              UniqueBase<IDependent>{},
                                              SharedBase<FUnknown, Vst::IEditController>{});
@@ -2017,7 +2112,7 @@ private:
                 return kResultTrue;
             }
 
-            jassertfalse;
+            //jassertfalse;
             return kResultFalse;
         }
 
@@ -3861,12 +3956,18 @@ using CreateFunction = FUnknown* (*)(Vst::IHostApplication*);
 
 static FUnknown* createComponentInstance (Vst::IHostApplication* host)
 {
-    return static_cast<Vst::IAudioProcessor*> (new JuceVST3Component (host));
+    jassert(gQueryInterfaceAudioProcessor == nullptr);
+  
+    JuceVST3Component* component = new JuceVST3Component (host);
+    gQueryInterfaceAudioProcessor = &(component->getPluginInstance());
+    return static_cast<Vst::IAudioProcessor*> (component);
 }
 
 static FUnknown* createControllerInstance (Vst::IHostApplication* host)
 {
-    return static_cast<Vst::IEditController*> (new JuceVST3EditController (host));
+    JuceVST3EditController* editController = new JuceVST3EditController (host, gQueryInterfaceAudioProcessor);
+    gQueryInterfaceAudioProcessor = nullptr;
+    return static_cast<Vst::IEditController*> (editController);
 }
 
 //==============================================================================
@@ -4112,6 +4213,7 @@ extern const char     *sgOrigVst;
 extern const char     *sgName;
 extern char     *pgCategoryName;
 extern uint8_t  *pgGuid;
+
 
 //==============================================================================
 // The VST3 plugin entry point.

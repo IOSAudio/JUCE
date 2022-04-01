@@ -228,10 +228,10 @@ bool AudioProcessor::enableAllBuses()
 
 bool AudioProcessor::checkBusesLayoutSupported (const BusesLayout& layouts) const
 {
-  auto ib = inputBuses.size();
-  auto ob = outputBuses.size();
-  auto cib = layouts.inputBuses.size();
-  auto cob = layouts.outputBuses.size();
+//  auto ib = inputBuses.size();
+//  auto ob = outputBuses.size();
+//  auto cib = layouts.inputBuses.size();
+//  auto cob = layouts.outputBuses.size();
 
 //  printf("checkBusesLayoutSupported %u, %u looking for %u, %u\n", ib, ob, cib, cob);
     if (layouts.inputBuses.size() == inputBuses.size()
