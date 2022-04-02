@@ -133,7 +133,7 @@ DECLARE_CLASS_IID (IContextInfoProvider3, 0x4e31fdf8, 0x6f4448d4, 0xb4ec1461, 0x
 
 struct IContextInfoHandler: Steinberg::FUnknown
 {
-	/** Called by the host if context information has changed. */
+  /** Called by the host iPresonus::IContextInfoProvideron has changed. */
 	virtual void PLUGIN_API notifyContextInfoChange () = 0;
   
 	static const Steinberg::FUID iid;

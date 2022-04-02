@@ -686,6 +686,20 @@ public:
 
     JUCE_END_IGNORE_WARNINGS_GCC_LIKE
 
+    tresult PLUGIN_API setComponentHandler (Steinberg::Vst::IComponentHandler* newHandler) override
+    {
+        tresult result = Vst::EditController::setComponentHandler (newHandler);
+      
+        if(audioProcessor)
+        {
+          if (auto* extensions = dynamic_cast<VST3ClientExtensions*> (audioProcessor->get()))
+          {
+              extensions->setIComponentHandler (componentHandler);
+          }
+        }
+        return result;
+    }
+  
     tresult PLUGIN_API queryInterface (const TUID targetIID, void** obj) override
     {
         FUID fuid = Steinberg::FUID::fromTUID(targetIID);
@@ -698,7 +712,8 @@ public:
                                                              targetIID,
                                                              &VST3ClientExtensions::queryIEditController);
         }
-        else
+      
+        if(!userProvidedInterface.isOk())
         {
             userProvidedInterface = queryAdditionalInterfaces (getPluginInstance(),
                                                                targetIID,
@@ -778,7 +793,7 @@ public:
         
         Steinberg::int32 isFocused;
         contextInfoProvider->getContextInfoValue (isFocused, Presonus::ContextInfo::kFocused);
-        if(trackProperties.isSelected != (AudioProcessor::TrackProperties::TriStateBool)(isSelected == 1))
+        if(trackProperties.isFocused != (AudioProcessor::TrackProperties::TriStateBool)(isFocused == 1))
         {
           trackProperties.isFocused = (AudioProcessor::TrackProperties::TriStateBool)(isFocused == 1);
           bSendUpdate = true;

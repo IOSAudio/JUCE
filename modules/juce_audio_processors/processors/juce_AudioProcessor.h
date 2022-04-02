@@ -1255,7 +1255,7 @@ public:
         AudioProcessor is loaded. */
     struct TrackProperties
     {
-        typedef enum {tsbTrue, tsbFalse, tsbNull} TriStateBool;
+        typedef enum {tsbFalse, tsbTrue, tsbNull} TriStateBool;
       
         String name;    // The name of the track - this will be empty if the track name is not known
         Colour colour;  // The colour of the track - this will be transparentBlack if the colour is not known
