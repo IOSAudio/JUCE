@@ -702,9 +702,6 @@ public:
   
     tresult PLUGIN_API queryInterface (const TUID targetIID, void** obj) override
     {
-        FUID fuid = Steinberg::FUID::fromTUID(targetIID);
-        printf("%x, %x, %x, %x\n", fuid.getLong1(), fuid.getLong3(), fuid.getLong3(), fuid.getLong4());
-      
         QueryInterfaceResult userProvidedInterface;
         if(queryInterfaceAudioProcessor)
         {
@@ -722,7 +719,10 @@ public:
       
         const auto juceProvidedInterface = queryInterfaceInternal (targetIID);
 
-        return extractResult (userProvidedInterface, juceProvidedInterface, obj);
+        Steinberg::tresult result =  extractResult (userProvidedInterface, juceProvidedInterface, obj);
+        //printf(" QueryInterface Result = %d\n", result);
+        return result;
+      
 		// TODOMERGE THIS needs moving into the new code
 #ifdef OLD
         TEST_FOR_AND_RETURN_IF_VALID (targetIID, Presonus::IContextInfoHandler)
@@ -3974,6 +3974,7 @@ static FUnknown* createComponentInstance (Vst::IHostApplication* host)
     jassert(gQueryInterfaceAudioProcessor == nullptr);
   
     JuceVST3Component* component = new JuceVST3Component (host);
+  
     gQueryInterfaceAudioProcessor = &(component->getPluginInstance());
     return static_cast<Vst::IAudioProcessor*> (component);
 }
