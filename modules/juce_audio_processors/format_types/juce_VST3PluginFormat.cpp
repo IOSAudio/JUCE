@@ -839,6 +839,9 @@ struct DescriptionFactory
 
             PluginDescription desc;
 
+            if(companyName.compare("Spectrasonics") == 0)
+                createPluginDescription (desc, file, companyName, name, info, info2.get(), infoW.get(), 0, 0);
+            else
             {
                 VSTComSmartPtr<Vst::IComponent> component;
 
@@ -2303,7 +2306,7 @@ public:
         if (getParameters().isEmpty() && editController->getParameterCount() > 0)
             configureParameters();
 
-        updateMidiMappings();
+        //updateMidiMappings();
 
         parameterDispatcher.start (*editController);
 
