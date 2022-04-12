@@ -51,6 +51,7 @@ public:
                              OwnedArray<PluginDescription>& result,
                              const String& fileOrIdentifier) override
     {
+      
         if (scanInProcess)
         {
             superprocess = nullptr;

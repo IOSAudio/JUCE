@@ -84,6 +84,12 @@ void PluginGraph::addPlugin (const PluginDescription& desc, Point<double> pos)
 {
     std::shared_ptr<ScopedDPIAwarenessDisabler> dpiDisabler = makeDPIAwarenessDisablerForPlugin (desc);
 
+//    std::unique_ptr<juce::XmlElement> xmlDesc = desc.createXml();
+//    xmlDesc->writeTo(juce::File("/Users/andrewcapon/desc.xml"), XmlElement::TextFormat());
+//    juce::VST3PluginFormat format;
+//    juce::OwnedArray<juce::PluginDescription> typesFound;
+//    format.findAllTypesForFile(typesFound, "/Library/Audio/Plug-Ins/VST3/Keyscape.vst3");
+
     formatManager.createPluginInstanceAsync (desc,
                                              graph.getSampleRate(),
                                              graph.getBlockSize(),
