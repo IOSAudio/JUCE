@@ -2111,7 +2111,10 @@ public:
             if (pluginInstance.editController != nullptr)
             {
                 Vst::String128 result;
-
+              
+                // come plugins seem to have difficulty writing null terminaters so set string to 0s
+                memset(result, 0, sizeof(result));
+              
                 if (pluginInstance.editController->getParamStringByValue (paramID, value, result) == kResultOk)
                     return toString (result).substring (0, maximumLength);
             }
