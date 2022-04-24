@@ -1354,6 +1354,8 @@ struct VST3PluginWindow : public AudioProcessorEditor,
 
         setContentScaleFactor();
         resizeToFit();
+      
+        resizableByHost = !(pluginView->canResize());
     }
 
     ~VST3PluginWindow() override

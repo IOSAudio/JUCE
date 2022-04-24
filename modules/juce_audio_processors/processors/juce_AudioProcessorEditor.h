@@ -231,12 +231,14 @@ private:
 
     //==============================================================================
     std::unique_ptr<AudioProcessorEditorListener> resizeListener;
-    bool resizableByHost = false;
     ComponentBoundsConstrainer defaultConstrainer;
     ComponentBoundsConstrainer* constrainer = nullptr;
     AudioProcessorEditorHostContext* hostContext = nullptr;
     Component::SafePointer<Component> splashScreen;
     AffineTransform hostScaleTransform;
+
+protected:
+    bool resizableByHost = false;
 
     JUCE_DECLARE_NON_COPYABLE (AudioProcessorEditor)
 };
