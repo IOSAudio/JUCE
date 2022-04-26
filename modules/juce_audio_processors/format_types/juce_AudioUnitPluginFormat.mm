@@ -307,8 +307,38 @@ namespace AudioUnitFormatHelpers
     struct AutoResizingNSViewComponent  : public ViewComponentBaseClass,
                                           private AsyncUpdater
     {
-        void childBoundsChanged (Component*) override  { triggerAsyncUpdate(); }
-        void handleAsyncUpdate() override              { resizeToFitView(); }
+#define IMPROVE_RESIZEING_FOR_AU 1
+#if IMPROVE_RESIZEING_FOR_AU
+        // ARC Improve issue with AU window resizeing
+        void childBoundsChanged (Component*) override
+        {
+            bool bUseAsync = true;
+            if (MessageManager::getInstance()->isThisTheMessageThread())
+            {
+                if(auto v = static_cast<NSView *>(getView()))
+                {
+                  NSRect r = v.frame;
+                  if(r.origin.x >= 0 && r.origin.y >= 0)
+                    bUseAsync = false;
+                }
+    
+                if(bUseAsync)
+                  triggerAsyncUpdate();
+                else
+                  resizeToFitView();
+            }
+            else
+                triggerAsyncUpdate();
+        }
+    
+        void handleAsyncUpdate() override
+        {
+            resizeToFitView();
+        }
+#else
+        void childBoundsChangedshit (Component*) override  { triggerAsyncUpdate(); }
+        void handleAsyncUpdateshit() override              { resizeToFitView(); }
+#endif
     };
   #endif
 
