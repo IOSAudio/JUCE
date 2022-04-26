@@ -138,7 +138,7 @@ public:
 
         @see setResizable
     */
-    bool isResizable() const noexcept      { return resizableByHost; }
+    virtual bool isResizable() const noexcept      { return resizableByHost; }
 
     /** This sets the maximum and minimum sizes for the window.
 
