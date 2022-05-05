@@ -2579,11 +2579,22 @@ public:
 
         associateWith (data, buffer);
         associateWith (data, midiMessages);
-
+      
+        if (editController != nullptr)
+        {
+            uint32_t uParamCount = inputParameterChanges->getParameterCount();
+            while(uParamCount--)
+            {
+                auto p = inputParameterChanges->getParameterData(uParamCount);
+                editController->setParamNormalized(p->getParameterId(), p->get());
+            }
+        }
+      
         cachedParamValues.ifSet ([&] (Steinberg::int32 index, float value)
         {
-            inputParameterChanges->set (cachedParamValues.getParamID (index), value);
+          inputParameterChanges->set (cachedParamValues.getParamID (index), value);
         });
+
 
         processor->process (data);
 
@@ -2968,6 +2979,7 @@ public:
 
         warnOnFailureIfImplemented (editController->setComponentState (&stream));
         resetParameters();
+        updateMidiMappings();
     }
 
     void resetParameters()
