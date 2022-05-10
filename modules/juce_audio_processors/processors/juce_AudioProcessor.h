@@ -1423,6 +1423,8 @@ public:
    #ifndef DOXYGEN
     // These methods are all deprecated in favour of using AudioProcessorParameter
     // and AudioProcessorParameterGroup
+    String virtual getParameterTextForValue (int parameterIndex, float value, int maximumStringLength) { return ""; };
+
     [[deprecated]] virtual int getNumParameters();
     [[deprecated]] virtual const String getParameterName (int parameterIndex);
     [[deprecated]] virtual String getParameterID (int index);

@@ -628,17 +628,20 @@ public:
                                 const float value = (float) *(pv->inValue);
                                 String text;
 
-                		// Fix to get correct text values back to host
-		                // ARCTODO fix Juce properly to add this functionality
-		                if(value == param->getValue())
-		                  text = juceFilter->getParameterText ((int) pv->inParamID, 1024);
-		                else
-		                {
-		                  if (LegacyAudioParameter::isLegacy (param))
-		                    text = String (value);
-		                  else
-		                    text = param->getText (value / getMaximumParameterValue (param), 0);
-		                }
+
+                                // Fix to get correct text values back to host
+                                // ARCTODO fix Juce properly to add this functionality
+                                if(value == param->getValue())
+                                    text = juceFilter->getParameterText ((int) pv->inParamID, 1024);
+                                else
+                                {
+                                    if (LegacyAudioParameter::isLegacy (param))
+                                    {
+                                      text = juceFilter->getParameterTextForValue ((int) pv->inParamID, value / getMaximumParameterValue (param), 1024);
+                                    }
+                                    else
+                                      text = param->getText (value / getMaximumParameterValue (param), 0);
+                                }
                                 pv->outString = text.toCFString();
 
                                 return noErr;
