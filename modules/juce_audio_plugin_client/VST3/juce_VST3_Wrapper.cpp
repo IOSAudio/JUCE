@@ -1489,6 +1489,8 @@ public:
         {
             if (details.programChanged)
             {
+                flags |= Vst::kParamValuesChanged;
+              
                 const auto programParameterId = audioProcessor->getProgramParamID();
 
                 if (audioProcessor->getParamForVSTParamID (programParameterId) != nullptr)
@@ -1505,7 +1507,7 @@ public:
                                       EditController::plainParamToNormalized (programParameterId, currentProgram));
                         endGesture (programParameterId);
 
-                        flags |= Vst::kParamValuesChanged;
+                        // flags |= Vst::kParamValuesChanged;
                     }
                 }
             }
