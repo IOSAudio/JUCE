@@ -1292,7 +1292,7 @@ struct VSTPluginInstance final   : public AudioPluginInstance,
         {
             char buffer[512] = { 0 };
 
-            if (dispatch (Vst2::effGetProductString, 0, 0, buffer, 0) != 0)
+            if (dispatch (Vst2::effGetEffectName, 0, 0, buffer, 0) != 0)
             {
                 String productName = String::createStringFromData (buffer, (int) sizeof (buffer));
 
