@@ -156,7 +156,7 @@ private:
             registerClass();
         }
 
-        static BOOL isFlipped (id, SEL) { return YES; }
+        static BOOL isFlipped (id, SEL) { return NO; }
         static BOOL isOpaque  (id, SEL) { return YES; }
 
         static void nudge (id self)

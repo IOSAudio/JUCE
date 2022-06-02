@@ -3207,6 +3207,9 @@ private:
             if ((paramInfo.flags & Vst::ParameterInfo::kIsBypass) != 0)
                 bypassParam = param;
 
+            if ((paramInfo.flags & Vst::ParameterInfo::kIsProgramChange) != 0)
+                param->setIsProgramChange(true);
+
             param->setOrigParameterIndex((int)paramInfo.id);
 
             std::function<AudioProcessorParameterGroup*(Vst::UnitID)> findOrCreateGroup;

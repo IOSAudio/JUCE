@@ -294,6 +294,16 @@ public:
     {
         origParameterIndex = juceParameterIndex;
     }
+  
+    bool isProgramChange(void)
+    {
+        return programChange;
+    }
+  
+    void setIsProgramChange(bool isProgramChange)
+    {
+        programChange = isProgramChange;
+    }
 private:
     //==============================================================================
     friend class AudioProcessor;
@@ -301,6 +311,7 @@ private:
     AudioProcessor* processor = nullptr;
     int parameterIndex = -1;
     int origParameterIndex = -1;
+    bool programChange = false;
     CriticalSection listenerLock;
     Array<Listener*> listeners;
     mutable StringArray valueStrings;

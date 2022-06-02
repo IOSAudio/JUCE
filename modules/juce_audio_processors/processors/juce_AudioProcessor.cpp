@@ -1280,93 +1280,150 @@ JUCE_BEGIN_IGNORE_WARNINGS_MSVC (4996)
 
 void AudioProcessor::setParameterNotifyingHost (int parameterIndex, float newValue)
 {
-    if (auto* param = getParameters()[parameterIndex])
-    {
-        param->setValueNotifyingHost (newValue);
-    }
-    else if (isPositiveAndBelow (parameterIndex, getNumParameters()))
-    {
-        setParameter (parameterIndex, newValue);
-        sendParamChangeMessageToListeners (parameterIndex, newValue);
-    }
+  if (auto* param = getParameters()[parameterIndex])
+  {
+      param->setValueNotifyingHost (newValue);
+  }
+  else
+  {
+      setParameter (parameterIndex, newValue);
+      sendParamChangeMessageToListeners (parameterIndex, newValue);
+  }
+//    if (auto* param = getParameters()[parameterIndex])
+//    {
+//        param->setValueNotifyingHost (newValue);
+//    }
+//    else if (isPositiveAndBelow (parameterIndex, getNumParameters()))
+//    {
+//        setParameter (parameterIndex, newValue);
+//        sendParamChangeMessageToListeners (parameterIndex, newValue);
+//    }
 }
 
 void AudioProcessor::sendParamChangeMessageToListeners (int parameterIndex, float newValue)
 {
-    if (auto* param = getParameters()[parameterIndex])
-    {
-        param->sendValueChangedMessageToListeners (newValue);
-    }
-    else
-    {
-        if (isPositiveAndBelow (parameterIndex, getNumParameters()))
-        {
-            for (int i = listeners.size(); --i >= 0;)
-                if (auto* l = getListenerLocked (i))
-                    l->audioProcessorParameterChanged (this, parameterIndex, newValue);
-        }
-        else
-        {
-            jassertfalse; // called with an out-of-range parameter index!
-        }
-    }
+  if (auto* param = getParameters()[parameterIndex])
+  {
+      param->sendValueChangedMessageToListeners (newValue);
+  }
+  else
+  {
+      for (int i = listeners.size(); --i >= 0;)
+          if (auto* l = getListenerLocked (i))
+              l->audioProcessorParameterChanged (this, parameterIndex, newValue);
+  }
+
+//    if (auto* param = getParameters()[parameterIndex])
+//    {
+//        param->sendValueChangedMessageToListeners (newValue);
+//    }
+//    else
+//    {
+//        if (isPositiveAndBelow (parameterIndex, getNumParameters()))
+//        {
+//            for (int i = listeners.size(); --i >= 0;)
+//                if (auto* l = getListenerLocked (i))
+//                    l->audioProcessorParameterChanged (this, parameterIndex, newValue);
+//        }
+//        else
+//        {
+//            jassertfalse; // called with an out-of-range parameter index!
+//        }
+//    }
 }
 
 void AudioProcessor::beginParameterChangeGesture (int parameterIndex)
 {
-    if (auto* param = getParameters()[parameterIndex])
-    {
-        param->beginChangeGesture();
-    }
-    else
-    {
-        if (isPositiveAndBelow (parameterIndex, getNumParameters()))
-        {
-           #if JUCE_DEBUG && ! JUCE_DISABLE_AUDIOPROCESSOR_BEGIN_END_GESTURE_CHECKING
-            // This means you've called beginParameterChangeGesture twice in succession without a matching
-            // call to endParameterChangeGesture. That might be fine in most hosts, but better to avoid doing it.
-            //ARCJUCE jassert (! changingParams[parameterIndex]);
-            changingParams.setBit (parameterIndex);
-           #endif
+  if (auto* param = getParameters()[parameterIndex])
+  {
+      param->beginChangeGesture();
+  }
+  else
+  {
+     #if JUCE_DEBUG && ! JUCE_DISABLE_AUDIOPROCESSOR_BEGIN_END_GESTURE_CHECKING
+      // This means you've called beginParameterChangeGesture twice in succession without a matching
+      // call to endParameterChangeGesture. That might be fine in most hosts, but better to avoid doing it.
+      //ARCJUCE jassert (! changingParams[parameterIndex]);
+      changingParams.setBit (parameterIndex);
+     #endif
 
-            for (int i = listeners.size(); --i >= 0;)
-                if (auto* l = getListenerLocked (i))
-                    l->audioProcessorParameterChangeGestureBegin (this, parameterIndex);
-        }
-        else
-        {
-            jassertfalse; // called with an out-of-range parameter index!
-        }
-    }
+      for (int i = listeners.size(); --i >= 0;)
+          if (auto* l = getListenerLocked (i))
+              l->audioProcessorParameterChangeGestureBegin (this, parameterIndex);
+  }
+
+//    if (auto* param = getParameters()[parameterIndex])
+//    {
+//        param->beginChangeGesture();
+//    }
+//    else
+//    {
+//        if (isPositiveAndBelow (parameterIndex, getNumParameters()))
+//        {
+//           #if JUCE_DEBUG && ! JUCE_DISABLE_AUDIOPROCESSOR_BEGIN_END_GESTURE_CHECKING
+//            // This means you've called beginParameterChangeGesture twice in succession without a matching
+//            // call to endParameterChangeGesture. That might be fine in most hosts, but better to avoid doing it.
+//            //ARCJUCE jassert (! changingParams[parameterIndex]);
+//            changingParams.setBit (parameterIndex);
+//           #endif
+//
+//            for (int i = listeners.size(); --i >= 0;)
+//                if (auto* l = getListenerLocked (i))
+//                    l->audioProcessorParameterChangeGestureBegin (this, parameterIndex);
+//        }
+//        else
+//        {
+//            jassertfalse; // called with an out-of-range parameter index!
+//        }
+//    }
 }
 
 void AudioProcessor::endParameterChangeGesture (int parameterIndex)
 {
-    if (auto* param = getParameters()[parameterIndex])
-    {
-        param->endChangeGesture();
-    }
-    else
-    {
-        if (isPositiveAndBelow (parameterIndex, getNumParameters()))
-        {
-           #if JUCE_DEBUG && ! JUCE_DISABLE_AUDIOPROCESSOR_BEGIN_END_GESTURE_CHECKING
-            // This means you've called endParameterChangeGesture without having previously called
-            // beginParameterChangeGesture. That might be fine in most hosts, but better to keep the
-            // calls matched correctly.
-            jassert (changingParams[parameterIndex]);
-            changingParams.clearBit (parameterIndex);
-           #endif
+  if (auto* param = getParameters()[parameterIndex])
+  {
+      param->endChangeGesture();
+  }
+  else
+  {
+     #if JUCE_DEBUG && ! JUCE_DISABLE_AUDIOPROCESSOR_BEGIN_END_GESTURE_CHECKING
+      // This means you've called endParameterChangeGesture without having previously called
+      // beginParameterChangeGesture. That might be fine in most hosts, but better to keep the
+      // calls matched correctly.
+      jassert (changingParams[parameterIndex]);
+      changingParams.clearBit (parameterIndex);
+     #endif
 
-            for (int i = listeners.size(); --i >= 0;)
-                if (auto* l = getListenerLocked (i))
-                    l->audioProcessorParameterChangeGestureEnd (this, parameterIndex);
-        }
-        else
-        {
-            jassertfalse; // called with an out-of-range parameter index!
-        }
-    }
+      for (int i = listeners.size(); --i >= 0;)
+          if (auto* l = getListenerLocked (i))
+              l->audioProcessorParameterChangeGestureEnd (this, parameterIndex);
+  }
+
+//    if (auto* param = getParameters()[parameterIndex])
+//    {
+//        param->endChangeGesture();
+//    }
+//    else
+//    {
+//        if (isPositiveAndBelow (parameterIndex, getNumParameters()))
+//        {
+//           #if JUCE_DEBUG && ! JUCE_DISABLE_AUDIOPROCESSOR_BEGIN_END_GESTURE_CHECKING
+//            // This means you've called endParameterChangeGesture without having previously called
+//            // beginParameterChangeGesture. That might be fine in most hosts, but better to keep the
+//            // calls matched correctly.
+//            jassert (changingParams[parameterIndex]);
+//            changingParams.clearBit (parameterIndex);
+//           #endif
+//
+//            for (int i = listeners.size(); --i >= 0;)
+//                if (auto* l = getListenerLocked (i))
+//                    l->audioProcessorParameterChangeGestureEnd (this, parameterIndex);
+//        }
+//        else
+//        {
+//            jassertfalse; // called with an out-of-range parameter index!
+//        }
+//    }
 }
 
 String AudioProcessor::getParameterName (int index, int maximumStringLength)
