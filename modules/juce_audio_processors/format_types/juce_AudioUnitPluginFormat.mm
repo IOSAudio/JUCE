@@ -71,20 +71,36 @@ namespace AudioUnitFormatHelpers
                                   (juce_wchar) ((type >> 16) & 0xff),
                                   (juce_wchar) ((type >> 8) & 0xff),
                                   (juce_wchar) (type & 0xff) };
-        return String (s, 4);
+      
+        String result = String (s, 4);
+        if(result.length() != 4)
+        {
+            // ok set as hex
+            std::stringstream ss;
+            ss << std::setfill ('0') << std::setw(sizeof(OSType)*2)
+               << std::hex << type;
+            result = ss.str();
+        }
+        
+        return result;
     }
 
     static OSType stringToOSType (String s)
     {
-        if (s.trim().length() >= 4) // (to avoid trimming leading spaces)
-            s = s.trim();
-
-        s += "    ";
-
-        return (((OSType) (unsigned char) s[0]) << 24)
-             | (((OSType) (unsigned char) s[1]) << 16)
-             | (((OSType) (unsigned char) s[2]) << 8)
-             |  ((OSType) (unsigned char) s[3]);
+        OSType result;
+        if(s.length() == 4)
+        {
+            uint32_t uType = *(uint32_t *)s.toRawUTF8();
+            uType = ntohl(uType);
+            result = uType;
+        }
+        else
+        {
+            std::stringstream ss;
+            ss << std::hex << s;
+            ss >> result;
+        }
+      return result;
     }
 
     static const char* auIdentifierPrefix = "AudioUnit:";
@@ -142,12 +158,15 @@ namespace AudioUnitFormatHelpers
             String s (fileOrIdentifier.substring (jmax (fileOrIdentifier.indexOfChar (':'),
                                                         fileOrIdentifier.indexOfChar ('/')) + 1));
 
-            if ((s.length() == 14) && (s[4] == ',') && (s[9] == ','))
+            juce::StringArray items;
+            items.addTokens (s, ",", "\"");
+
+            if (items.size() == 3)
             {
                 zerostruct (desc);
-                desc.componentType         = stringToOSType (s.substring(0,4));
-                desc.componentSubType      = stringToOSType (s.substring(5,9));
-                desc.componentManufacturer = stringToOSType (s.substring(10,14));
+                desc.componentType         = stringToOSType (items[0]);
+                desc.componentSubType      = stringToOSType (items[1]);
+                desc.componentManufacturer = stringToOSType (items[2]);
 
                 if (AudioComponent comp = AudioComponentFindNext (nullptr, &desc))
                 {
