@@ -149,6 +149,12 @@
     <Filter Include="JUCE Modules\juce_audio_processors\format">
       <UniqueIdentifier>{86737735-F6BA-F64A-5EC7-5C9F36755F79}</UniqueIdentifier>
     </Filter>
+    <Filter Include="JUCE Modules\juce_audio_processors\format_types\pslextensions">
+      <UniqueIdentifier>{DC27B453-334E-6965-BAD5-7F88C3E5BA46}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="JUCE Modules\juce_audio_processors\format_types\pslextensionsOld">
+      <UniqueIdentifier>{C14D3BA7-C602-F7E4-D9F4-5719DC3A946F}</UniqueIdentifier>
+    </Filter>
     <Filter Include="JUCE Modules\juce_audio_processors\format_types\VST3_SDK\base\source">
       <UniqueIdentifier>{4DC60E78-BBC0-B540-63A2-37E14ABBEF09}</UniqueIdentifier>
     </Filter>
@@ -3531,6 +3537,60 @@
     <ClInclude Include="..\..\..\..\modules\juce_audio_processors\format\juce_AudioPluginFormatManager.h">
       <Filter>JUCE Modules\juce_audio_processors\format</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\..\modules\juce_audio_processors\format_types\pslextensions\ipslcontextinfo.h">
+      <Filter>JUCE Modules\juce_audio_processors\format_types\pslextensions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\modules\juce_audio_processors\format_types\pslextensions\ipsleditcontroller.h">
+      <Filter>JUCE Modules\juce_audio_processors\format_types\pslextensions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\modules\juce_audio_processors\format_types\pslextensions\ipslgainreduction.h">
+      <Filter>JUCE Modules\juce_audio_processors\format_types\pslextensions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\modules\juce_audio_processors\format_types\pslextensions\ipslhostcommands.h">
+      <Filter>JUCE Modules\juce_audio_processors\format_types\pslextensions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\modules\juce_audio_processors\format_types\pslextensions\ipslinstrumentcontroller.h">
+      <Filter>JUCE Modules\juce_audio_processors\format_types\pslextensions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\modules\juce_audio_processors\format_types\pslextensions\ipslsoundvariation.h">
+      <Filter>JUCE Modules\juce_audio_processors\format_types\pslextensions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\modules\juce_audio_processors\format_types\pslextensions\ipslviewembedding.h">
+      <Filter>JUCE Modules\juce_audio_processors\format_types\pslextensions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\modules\juce_audio_processors\format_types\pslextensions\ipslviewscaling.h">
+      <Filter>JUCE Modules\juce_audio_processors\format_types\pslextensions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\modules\juce_audio_processors\format_types\pslextensions\pslvst2extensions.h">
+      <Filter>JUCE Modules\juce_audio_processors\format_types\pslextensions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\modules\juce_audio_processors\format_types\pslextensionsOld\ipslcontextinfo.h">
+      <Filter>JUCE Modules\juce_audio_processors\format_types\pslextensionsOld</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\modules\juce_audio_processors\format_types\pslextensionsOld\ipsleditcontroller.h">
+      <Filter>JUCE Modules\juce_audio_processors\format_types\pslextensionsOld</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\modules\juce_audio_processors\format_types\pslextensionsOld\ipslgainreduction.h">
+      <Filter>JUCE Modules\juce_audio_processors\format_types\pslextensionsOld</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\modules\juce_audio_processors\format_types\pslextensionsOld\ipslhostcommands.h">
+      <Filter>JUCE Modules\juce_audio_processors\format_types\pslextensionsOld</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\modules\juce_audio_processors\format_types\pslextensionsOld\ipslinstrumentcontroller.h">
+      <Filter>JUCE Modules\juce_audio_processors\format_types\pslextensionsOld</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\modules\juce_audio_processors\format_types\pslextensionsOld\ipslsoundvariation.h">
+      <Filter>JUCE Modules\juce_audio_processors\format_types\pslextensionsOld</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\modules\juce_audio_processors\format_types\pslextensionsOld\ipslviewembedding.h">
+      <Filter>JUCE Modules\juce_audio_processors\format_types\pslextensionsOld</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\modules\juce_audio_processors\format_types\pslextensionsOld\ipslviewscaling.h">
+      <Filter>JUCE Modules\juce_audio_processors\format_types\pslextensionsOld</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\modules\juce_audio_processors\format_types\pslextensionsOld\pslvst2extensions.h">
+      <Filter>JUCE Modules\juce_audio_processors\format_types\pslextensionsOld</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\..\..\modules\juce_audio_processors\format_types\VST3_SDK\base\source\classfactoryhelpers.h">
       <Filter>JUCE Modules\juce_audio_processors\format_types\VST3_SDK\base\source</Filter>
     </ClInclude>
@@ -3685,6 +3745,9 @@
       <Filter>JUCE Modules\juce_audio_processors\format_types\VST3_SDK\pluginterfaces\vst</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\modules\juce_audio_processors\format_types\VST3_SDK\pluginterfaces\vst\ivstunits.h">
+      <Filter>JUCE Modules\juce_audio_processors\format_types\VST3_SDK\pluginterfaces\vst</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\modules\juce_audio_processors\format_types\VST3_SDK\pluginterfaces\vst\vstpresetkeys.h">
       <Filter>JUCE Modules\juce_audio_processors\format_types\VST3_SDK\pluginterfaces\vst</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\modules\juce_audio_processors\format_types\VST3_SDK\pluginterfaces\vst\vstpshpack4.h">

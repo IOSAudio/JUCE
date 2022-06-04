@@ -4,8 +4,8 @@
               juceFolder="../../../juce" bundleIdentifier="com.juce.pluginhost"
               companyName="Raw Material Software Limited" displaySplashScreen="0"
               reportAppUsage="0" companyCopyright="Raw Material Software Limited"
-              useAppConfig="0" addUsingNamespaceToJuceHeader="1" jucerFormatVersion="1">
-              defines="JUCE_CATCH_UNHANDLED_EXCEPTIONS=1" headerPath="/Users/andrewcapon/Documents/Development/VST2_SDK">
+              useAppConfig="0" addUsingNamespaceToJuceHeader="1" jucerFormatVersion="1"
+              headerPath="/Users/andrewcapon/Development/VST2_SDK">
   <EXPORTFORMATS>
     <XCODE_MAC targetFolder="Builds/MacOSX" smallIcon="c97aUr" bigIcon="c97aUr"
                microphonePermissionNeeded="1" sendAppleEventsPermissionNeeded="1"
@@ -13,7 +13,6 @@
                extraDefs="JUCE_PLUGINHOST_VST=1" xcodeValidArchs="arm64,arm64e,x86_64">
       <CONFIGURATIONS>
         <CONFIGURATION name="Debug" isDebug="1" targetName="AudioPluginHost" recommendedWarnings="LLVM"/>
-                       osxArchitecture="64BitUniversal"/>
         <CONFIGURATION name="Release" isDebug="0" optimisation="2" targetName="AudioPluginHost"
                        recommendedWarnings="LLVM" osxArchitecture="64BitUniversal"/>
       </CONFIGURATIONS>

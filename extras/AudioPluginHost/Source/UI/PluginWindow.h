@@ -165,6 +165,8 @@ public:
          activeWindowList (windowList),
          node (n), type (t)
     {
+        auto shit = n->getProcessor()->getName();
+      
         setSize (400, 300);
 
         if (auto* ui = createProcessorEditor (*node->getProcessor(), type))

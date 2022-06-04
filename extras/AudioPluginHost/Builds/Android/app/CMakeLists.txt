@@ -25,8 +25,16 @@ enable_language(ASM)
 
 if(JUCE_BUILD_CONFIGURATION MATCHES "DEBUG")
     add_definitions([[-DJUCE_DISPLAY_SPLASH_SCREEN=0]] [[-DJUCE_USE_DARK_SPLASH_SCREEN=1]] [[-DJUCE_PROJUCER_VERSION=0x60106]] [[-DJUCE_MODULE_AVAILABLE_juce_audio_basics=1]] [[-DJUCE_MODULE_AVAILABLE_juce_audio_devices=1]] [[-DJUCE_MODULE_AVAILABLE_juce_audio_formats=1]] [[-DJUCE_MODULE_AVAILABLE_juce_audio_processors=1]] [[-DJUCE_MODULE_AVAILABLE_juce_audio_utils=1]] [[-DJUCE_MODULE_AVAILABLE_juce_core=1]] [[-DJUCE_MODULE_AVAILABLE_juce_cryptography=1]] [[-DJUCE_MODULE_AVAILABLE_juce_data_structures=1]] [[-DJUCE_MODULE_AVAILABLE_juce_dsp=1]] [[-DJUCE_MODULE_AVAILABLE_juce_events=1]] [[-DJUCE_MODULE_AVAILABLE_juce_graphics=1]] [[-DJUCE_MODULE_AVAILABLE_juce_gui_basics=1]] [[-DJUCE_MODULE_AVAILABLE_juce_gui_extra=1]] [[-DJUCE_MODULE_AVAILABLE_juce_opengl=1]] [[-DJUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1]] [[-DJUCE_WASAPI=1]] [[-DJUCE_DIRECTSOUND=1]] [[-DJUCE_ALSA=1]] [[-DJUCE_USE_FLAC=0]] [[-DJUCE_USE_OGGVORBIS=1]] [[-DJUCE_PLUGINHOST_VST3=1]] [[-DJUCE_PLUGINHOST_AU=1]] [[-DJUCE_PLUGINHOST_LADSPA=1]] [[-DJUCE_USE_CDREADER=0]] [[-DJUCE_USE_CDBURNER=0]] [[-DJUCE_WEB_BROWSER=0]] [[-DJUCE_STANDALONE_APPLICATION=1]] [[-DJUCER_ANDROIDSTUDIO_7F0E4A25=1]] [[-DJUCE_APP_VERSION=1.0.0]] [[-DJUCE_APP_VERSION_HEX=0x10000]] [[-DDEBUG=1]] [[-D_DEBUG=1]])
+    include_directories( AFTER
+        "/Users/andrewcapon/Development/VST2_SDK"
+    )
+
 elseif(JUCE_BUILD_CONFIGURATION MATCHES "RELEASE")
     add_definitions([[-DJUCE_DISPLAY_SPLASH_SCREEN=0]] [[-DJUCE_USE_DARK_SPLASH_SCREEN=1]] [[-DJUCE_PROJUCER_VERSION=0x60106]] [[-DJUCE_MODULE_AVAILABLE_juce_audio_basics=1]] [[-DJUCE_MODULE_AVAILABLE_juce_audio_devices=1]] [[-DJUCE_MODULE_AVAILABLE_juce_audio_formats=1]] [[-DJUCE_MODULE_AVAILABLE_juce_audio_processors=1]] [[-DJUCE_MODULE_AVAILABLE_juce_audio_utils=1]] [[-DJUCE_MODULE_AVAILABLE_juce_core=1]] [[-DJUCE_MODULE_AVAILABLE_juce_cryptography=1]] [[-DJUCE_MODULE_AVAILABLE_juce_data_structures=1]] [[-DJUCE_MODULE_AVAILABLE_juce_dsp=1]] [[-DJUCE_MODULE_AVAILABLE_juce_events=1]] [[-DJUCE_MODULE_AVAILABLE_juce_graphics=1]] [[-DJUCE_MODULE_AVAILABLE_juce_gui_basics=1]] [[-DJUCE_MODULE_AVAILABLE_juce_gui_extra=1]] [[-DJUCE_MODULE_AVAILABLE_juce_opengl=1]] [[-DJUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1]] [[-DJUCE_WASAPI=1]] [[-DJUCE_DIRECTSOUND=1]] [[-DJUCE_ALSA=1]] [[-DJUCE_USE_FLAC=0]] [[-DJUCE_USE_OGGVORBIS=1]] [[-DJUCE_PLUGINHOST_VST3=1]] [[-DJUCE_PLUGINHOST_AU=1]] [[-DJUCE_PLUGINHOST_LADSPA=1]] [[-DJUCE_USE_CDREADER=0]] [[-DJUCE_USE_CDBURNER=0]] [[-DJUCE_WEB_BROWSER=0]] [[-DJUCE_STANDALONE_APPLICATION=1]] [[-DJUCER_ANDROIDSTUDIO_7F0E4A25=1]] [[-DJUCE_APP_VERSION=1.0.0]] [[-DJUCE_APP_VERSION_HEX=0x10000]] [[-DNDEBUG=1]])
+    include_directories( AFTER
+        "/Users/andrewcapon/Development/VST2_SDK"
+    )
+
     if(NOT (ANDROID_ABI STREQUAL "mips" OR ANDROID_ABI STREQUAL "mips64"))
         set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -flto")
         set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -flto")
@@ -483,6 +491,24 @@ add_library( ${BINARY_NAME}
     "../../../../../modules/juce_audio_processors/format/juce_AudioPluginFormat.h"
     "../../../../../modules/juce_audio_processors/format/juce_AudioPluginFormatManager.cpp"
     "../../../../../modules/juce_audio_processors/format/juce_AudioPluginFormatManager.h"
+    "../../../../../modules/juce_audio_processors/format_types/pslextensions/ipslcontextinfo.h"
+    "../../../../../modules/juce_audio_processors/format_types/pslextensions/ipsleditcontroller.h"
+    "../../../../../modules/juce_audio_processors/format_types/pslextensions/ipslgainreduction.h"
+    "../../../../../modules/juce_audio_processors/format_types/pslextensions/ipslhostcommands.h"
+    "../../../../../modules/juce_audio_processors/format_types/pslextensions/ipslinstrumentcontroller.h"
+    "../../../../../modules/juce_audio_processors/format_types/pslextensions/ipslsoundvariation.h"
+    "../../../../../modules/juce_audio_processors/format_types/pslextensions/ipslviewembedding.h"
+    "../../../../../modules/juce_audio_processors/format_types/pslextensions/ipslviewscaling.h"
+    "../../../../../modules/juce_audio_processors/format_types/pslextensions/pslvst2extensions.h"
+    "../../../../../modules/juce_audio_processors/format_types/pslextensionsOld/ipslcontextinfo.h"
+    "../../../../../modules/juce_audio_processors/format_types/pslextensionsOld/ipsleditcontroller.h"
+    "../../../../../modules/juce_audio_processors/format_types/pslextensionsOld/ipslgainreduction.h"
+    "../../../../../modules/juce_audio_processors/format_types/pslextensionsOld/ipslhostcommands.h"
+    "../../../../../modules/juce_audio_processors/format_types/pslextensionsOld/ipslinstrumentcontroller.h"
+    "../../../../../modules/juce_audio_processors/format_types/pslextensionsOld/ipslsoundvariation.h"
+    "../../../../../modules/juce_audio_processors/format_types/pslextensionsOld/ipslviewembedding.h"
+    "../../../../../modules/juce_audio_processors/format_types/pslextensionsOld/ipslviewscaling.h"
+    "../../../../../modules/juce_audio_processors/format_types/pslextensionsOld/pslvst2extensions.h"
     "../../../../../modules/juce_audio_processors/format_types/VST3_SDK/base/source/baseiids.cpp"
     "../../../../../modules/juce_audio_processors/format_types/VST3_SDK/base/source/classfactoryhelpers.h"
     "../../../../../modules/juce_audio_processors/format_types/VST3_SDK/base/source/fbuffer.cpp"
@@ -549,6 +575,7 @@ add_library( ${BINARY_NAME}
     "../../../../../modules/juce_audio_processors/format_types/VST3_SDK/pluginterfaces/vst/ivstrepresentation.h"
     "../../../../../modules/juce_audio_processors/format_types/VST3_SDK/pluginterfaces/vst/ivsttestplugprovider.h"
     "../../../../../modules/juce_audio_processors/format_types/VST3_SDK/pluginterfaces/vst/ivstunits.h"
+    "../../../../../modules/juce_audio_processors/format_types/VST3_SDK/pluginterfaces/vst/vstpresetkeys.h"
     "../../../../../modules/juce_audio_processors/format_types/VST3_SDK/pluginterfaces/vst/vstpshpack4.h"
     "../../../../../modules/juce_audio_processors/format_types/VST3_SDK/pluginterfaces/vst/vstspeaker.h"
     "../../../../../modules/juce_audio_processors/format_types/VST3_SDK/pluginterfaces/vst/vsttypes.h"
@@ -2154,6 +2181,24 @@ set_source_files_properties("../../../../../modules/juce_audio_processors/format
 set_source_files_properties("../../../../../modules/juce_audio_processors/format/juce_AudioPluginFormat.h" PROPERTIES HEADER_FILE_ONLY TRUE)
 set_source_files_properties("../../../../../modules/juce_audio_processors/format/juce_AudioPluginFormatManager.cpp" PROPERTIES HEADER_FILE_ONLY TRUE)
 set_source_files_properties("../../../../../modules/juce_audio_processors/format/juce_AudioPluginFormatManager.h" PROPERTIES HEADER_FILE_ONLY TRUE)
+set_source_files_properties("../../../../../modules/juce_audio_processors/format_types/pslextensions/ipslcontextinfo.h" PROPERTIES HEADER_FILE_ONLY TRUE)
+set_source_files_properties("../../../../../modules/juce_audio_processors/format_types/pslextensions/ipsleditcontroller.h" PROPERTIES HEADER_FILE_ONLY TRUE)
+set_source_files_properties("../../../../../modules/juce_audio_processors/format_types/pslextensions/ipslgainreduction.h" PROPERTIES HEADER_FILE_ONLY TRUE)
+set_source_files_properties("../../../../../modules/juce_audio_processors/format_types/pslextensions/ipslhostcommands.h" PROPERTIES HEADER_FILE_ONLY TRUE)
+set_source_files_properties("../../../../../modules/juce_audio_processors/format_types/pslextensions/ipslinstrumentcontroller.h" PROPERTIES HEADER_FILE_ONLY TRUE)
+set_source_files_properties("../../../../../modules/juce_audio_processors/format_types/pslextensions/ipslsoundvariation.h" PROPERTIES HEADER_FILE_ONLY TRUE)
+set_source_files_properties("../../../../../modules/juce_audio_processors/format_types/pslextensions/ipslviewembedding.h" PROPERTIES HEADER_FILE_ONLY TRUE)
+set_source_files_properties("../../../../../modules/juce_audio_processors/format_types/pslextensions/ipslviewscaling.h" PROPERTIES HEADER_FILE_ONLY TRUE)
+set_source_files_properties("../../../../../modules/juce_audio_processors/format_types/pslextensions/pslvst2extensions.h" PROPERTIES HEADER_FILE_ONLY TRUE)
+set_source_files_properties("../../../../../modules/juce_audio_processors/format_types/pslextensionsOld/ipslcontextinfo.h" PROPERTIES HEADER_FILE_ONLY TRUE)
+set_source_files_properties("../../../../../modules/juce_audio_processors/format_types/pslextensionsOld/ipsleditcontroller.h" PROPERTIES HEADER_FILE_ONLY TRUE)
+set_source_files_properties("../../../../../modules/juce_audio_processors/format_types/pslextensionsOld/ipslgainreduction.h" PROPERTIES HEADER_FILE_ONLY TRUE)
+set_source_files_properties("../../../../../modules/juce_audio_processors/format_types/pslextensionsOld/ipslhostcommands.h" PROPERTIES HEADER_FILE_ONLY TRUE)
+set_source_files_properties("../../../../../modules/juce_audio_processors/format_types/pslextensionsOld/ipslinstrumentcontroller.h" PROPERTIES HEADER_FILE_ONLY TRUE)
+set_source_files_properties("../../../../../modules/juce_audio_processors/format_types/pslextensionsOld/ipslsoundvariation.h" PROPERTIES HEADER_FILE_ONLY TRUE)
+set_source_files_properties("../../../../../modules/juce_audio_processors/format_types/pslextensionsOld/ipslviewembedding.h" PROPERTIES HEADER_FILE_ONLY TRUE)
+set_source_files_properties("../../../../../modules/juce_audio_processors/format_types/pslextensionsOld/ipslviewscaling.h" PROPERTIES HEADER_FILE_ONLY TRUE)
+set_source_files_properties("../../../../../modules/juce_audio_processors/format_types/pslextensionsOld/pslvst2extensions.h" PROPERTIES HEADER_FILE_ONLY TRUE)
 set_source_files_properties("../../../../../modules/juce_audio_processors/format_types/VST3_SDK/base/source/baseiids.cpp" PROPERTIES HEADER_FILE_ONLY TRUE)
 set_source_files_properties("../../../../../modules/juce_audio_processors/format_types/VST3_SDK/base/source/classfactoryhelpers.h" PROPERTIES HEADER_FILE_ONLY TRUE)
 set_source_files_properties("../../../../../modules/juce_audio_processors/format_types/VST3_SDK/base/source/fbuffer.cpp" PROPERTIES HEADER_FILE_ONLY TRUE)
@@ -2220,6 +2265,7 @@ set_source_files_properties("../../../../../modules/juce_audio_processors/format
 set_source_files_properties("../../../../../modules/juce_audio_processors/format_types/VST3_SDK/pluginterfaces/vst/ivstrepresentation.h" PROPERTIES HEADER_FILE_ONLY TRUE)
 set_source_files_properties("../../../../../modules/juce_audio_processors/format_types/VST3_SDK/pluginterfaces/vst/ivsttestplugprovider.h" PROPERTIES HEADER_FILE_ONLY TRUE)
 set_source_files_properties("../../../../../modules/juce_audio_processors/format_types/VST3_SDK/pluginterfaces/vst/ivstunits.h" PROPERTIES HEADER_FILE_ONLY TRUE)
+set_source_files_properties("../../../../../modules/juce_audio_processors/format_types/VST3_SDK/pluginterfaces/vst/vstpresetkeys.h" PROPERTIES HEADER_FILE_ONLY TRUE)
 set_source_files_properties("../../../../../modules/juce_audio_processors/format_types/VST3_SDK/pluginterfaces/vst/vstpshpack4.h" PROPERTIES HEADER_FILE_ONLY TRUE)
 set_source_files_properties("../../../../../modules/juce_audio_processors/format_types/VST3_SDK/pluginterfaces/vst/vstspeaker.h" PROPERTIES HEADER_FILE_ONLY TRUE)
 set_source_files_properties("../../../../../modules/juce_audio_processors/format_types/VST3_SDK/pluginterfaces/vst/vsttypes.h" PROPERTIES HEADER_FILE_ONLY TRUE)
