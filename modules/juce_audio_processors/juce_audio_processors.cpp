@@ -142,41 +142,37 @@ private:
         }
     }
 
-    struct FlippedNSView : public ObjCClass<NSView>
-    {
-        FlippedNSView()
-            : ObjCClass ("JuceFlippedNSView_")
-        {
-            addIvar<NSViewComponentWithParent*> ("owner");
+  struct InnerNSView : public ObjCClass<NSView>
+   {
+       InnerNSView()
+           : ObjCClass ("JuceInnerNSView_")
+       {
+           addIvar<NSViewComponentWithParent*> ("owner");
 
-            addMethod (@selector (isFlipped),      isFlipped);
-            addMethod (@selector (isOpaque),       isOpaque);
-            addMethod (@selector (didAddSubview:), didAddSubview);
+           addMethod (@selector (isOpaque),       isOpaque);
+           addMethod (@selector (didAddSubview:), didAddSubview);
 
-            registerClass();
-        }
+           registerClass();
+       }
 
-        static BOOL isFlipped (id, SEL) { return NO; }
-        static BOOL isOpaque  (id, SEL) { return YES; }
+       static BOOL isOpaque  (id, SEL) { return YES; }
 
-        static void nudge (id self)
-        {
-            if (auto* owner = getIvar<NSViewComponentWithParent*> (self, "owner"))
-                if (owner->wantsNudge == WantsNudge::yes)
-                    owner->triggerAsyncUpdate();
-        }
+       static void nudge (id self)
+      {
+          if (auto* owner = getIvar<NSViewComponentWithParent*> (self, "owner"))
+              if (owner->wantsNudge == WantsNudge::yes)
+                   owner->triggerAsyncUpdate();
+       }
 
-        static void viewDidUnhide (id self, SEL)               { nudge (self); }
-        static void didAddSubview (id self, SEL, NSView*)      { nudge (self); }
-        static void viewDidMoveToSuperview (id self, SEL)      { nudge (self); }
-        static void viewDidMoveToWindow (id self, SEL)         { nudge (self); }
-    };
+       static void didAddSubview (id self, SEL, NSView*)      { nudge (self); }
+   };
 
-    static FlippedNSView& getViewClass()
-    {
-        static FlippedNSView result;
-        return result;
-    }
+   static InnerNSView& getViewClass()
+   {
+       static InnerNSView result;
+       return result;
+   }
+  
 };
 
 #endif
