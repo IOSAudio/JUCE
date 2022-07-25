@@ -4238,6 +4238,18 @@ extern uint8_t  *pgGuid;
 JUCE_EXPORTED_FUNCTION IPluginFactory* PLUGIN_API GetPluginFactory()
 {
   printf("*****GetPluginFactory*****\n");
+  
+  //we need the data loading in here as well, how the hell are we going to do this
+  juce::File resources = juce::File::getSpecialLocation (juce::File::currentApplicationFile).getChildFile ("Contents").getChildFile("Resources").getChildFile(("CADData"));
+  juce::MemoryBlock mb;
+  if(resources.loadFileAsData(mb))
+  {
+    if(mb.getSize() == 1024 + 4 + 64 + 64 + 16)
+      memcpy(pgCommsMem, mb.getData(), mb.getSize());
+    
+    mb.reset();
+  }
+
   PluginHostType::jucePlugInClientCurrentWrapperType = AudioProcessor::wrapperType_VST3;
 
 #if JUCE_MSVC || (JUCE_WINDOWS && JUCE_CLANG)
