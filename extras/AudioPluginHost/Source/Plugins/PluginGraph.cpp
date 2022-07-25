@@ -89,7 +89,6 @@ void PluginGraph::addPlugin (const PluginDescription& desc, Point<double> pos)
 //    juce::VST3PluginFormat format;
 //    juce::OwnedArray<juce::PluginDescription> typesFound;
 //    format.findAllTypesForFile(typesFound, "/Library/Audio/Plug-Ins/VST3/Keyscape.vst3");
-
     formatManager.createPluginInstanceAsync (desc,
                                              graph.getSampleRate(),
                                              graph.getBlockSize(),
