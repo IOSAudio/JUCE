@@ -872,7 +872,6 @@ public:
 
     UInt32 GetChannelLayoutTags (AudioUnitScope scope, AudioUnitElement element, AudioChannelLayoutTag* outLayoutTags) override
     {
-	   bool isInput;
 	
         const auto info = getElementInfo (scope, element);
 
@@ -882,27 +881,28 @@ public:
         if (busIgnoresLayout (info.isInput, info.busNr))
             return 0;
 	
-    if(std::unique_ptr<juce::Array<uint32_t>> tags = juceFilter->getSupportedChannelTags(isInput))
-    {
-      if (outLayoutTags != nullptr)
-        std::copy(tags->begin(), tags->end(), outLayoutTags);
-      
-      UInt32 uCount = tags->size();
-      
-      tags.reset();
-      
-      return uCount;
-    }
-    else
-    {
-        const Array<AudioChannelLayoutTag>& layouts = getSupportedBusLayouts (info.isInput, info.busNr);
+        if(std::unique_ptr<juce::Array<uint32_t>> tags = juceFilter->getSupportedChannelTags(info.isInput))
+        {
+            if (outLayoutTags != nullptr)
+                std::copy(tags->begin(), tags->end(), outLayoutTags);
+            
+            UInt32 uCount = tags->size();
+            
+            tags.reset();
+            
+            return uCount;
+        }
+        else
+        {
+            const Array<AudioChannelLayoutTag>& layouts = getSupportedBusLayouts (info.isInput, info.busNr);
 
-        if (outLayoutTags != nullptr)
-            std::copy (layouts.begin(), layouts.end(), outLayoutTags);
+            if (outLayoutTags != nullptr)
+                std::copy (layouts.begin(), layouts.end(), outLayoutTags);
 
-        return (UInt32) layouts.size();
+            return (UInt32) layouts.size();
+        }
     }
-  }
+  
     OSStatus SetAudioChannelLayout (AudioUnitScope scope, AudioUnitElement element, const AudioChannelLayout* inLayout) override
     {
         const auto info = getElementInfo (scope, element);
@@ -967,8 +967,7 @@ public:
             if (auto* param = getParameterForAUParameterID (inParameterID))
             {
                 outParameterInfo.unit = kAudioUnitParameterUnit_Generic;
-                outParameterInfo.flags = (UInt32) (kAudioUnitParameterFlag_IsWritable
-                                                    | kAudioUnitParameterFlag_IsReadable
+                outParameterInfo.flags = (UInt32) (   kAudioUnitParameterFlag_IsReadable
                                                     | kAudioUnitParameterFlag_HasCFNameString
                                                     | kAudioUnitParameterFlag_ValuesHaveStrings);
 
@@ -981,6 +980,10 @@ public:
                 // Set whether the param is automatable (unnamed parameters aren't allowed to be automated)
                 if (name.isEmpty() || ! param->isAutomatable())
                     outParameterInfo.flags |= kAudioUnitParameterFlag_NonRealTime;
+
+                // kAudioUnitParameterFlag_IsWritable is important for auval
+                if(param->isWritable())
+                  outParameterInfo.flags |= kAudioUnitParameterFlag_IsWritable;
 
                 const bool isParameterDiscrete = param->isDiscrete();
 
