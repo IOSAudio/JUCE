@@ -52,6 +52,8 @@ public:
     bool isOrientationInverted() const override        { return processor->isParameterOrientationInverted (parameterIndex); }
     bool isAutomatable() const override                { return processor->isParameterAutomatable (parameterIndex); }
     bool isMetaParameter() const override              { return processor->isMetaParameter (parameterIndex); }
+    bool isWritable() const override                   { return processor->isParameterWritable (parameterIndex); }
+
     Category getCategory() const override              { return processor->getParameterCategory (parameterIndex); }
     String getCurrentValueAsText() const override      { return processor->getParameterText (parameterIndex); }
     String getParamID() const                          { return processor->getParameterID (parameterIndex); }

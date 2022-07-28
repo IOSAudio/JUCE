@@ -1533,6 +1533,14 @@ bool AudioProcessor::isParameterAutomatable (int index) const
     return true;
 }
 
+bool AudioProcessor::isParameterWritable (int index) const
+{
+    if (auto* p = getParameters()[index])
+        return p->isWritable();
+
+    return true;
+}
+
 bool AudioProcessor::isParameterOrientationInverted (int index) const
 {
     if (auto* p = getParameters()[index])
@@ -1671,6 +1679,7 @@ void AudioProcessorParameter::sendValueChangedMessageToListeners (float newValue
 
 bool AudioProcessorParameter::isOrientationInverted() const                      { return false; }
 bool AudioProcessorParameter::isAutomatable() const                              { return true; }
+bool AudioProcessorParameter::isWritable() const                                 { return true; }
 bool AudioProcessorParameter::isMetaParameter() const                            { return false; }
 AudioProcessorParameter::Category AudioProcessorParameter::getCategory() const   { return genericParameter; }
 int AudioProcessorParameter::getNumSteps() const                                 { return AudioProcessor::getDefaultNumParameterSteps(); }

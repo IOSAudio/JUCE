@@ -1439,6 +1439,7 @@ public:
     [[deprecated]] virtual bool isParameterOrientationInverted (int index) const;
     [[deprecated]] virtual void setParameter (int parameterIndex, float newValue);
     [[deprecated]] virtual bool isParameterAutomatable (int parameterIndex) const;
+    [[deprecated]] virtual bool isParameterWritable (int parameterIndex) const;
     [[deprecated]] virtual bool isMetaParameter (int parameterIndex) const;
     [[deprecated]] virtual AudioProcessorParameter::Category getParameterCategory (int parameterIndex) const;
     [[deprecated]] void beginParameterChangeGesture (int parameterIndex);

@@ -176,6 +176,8 @@ public:
     */
     virtual bool isMetaParameter() const;
 
+    virtual bool isWritable() const;
+
     enum Category
     {
         genericParameter = (0 << 16) | 0,        /**< If your parameter is not a meter then you should use this category */

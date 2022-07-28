@@ -483,7 +483,8 @@ public:
                              bool isBoolean,
                              const String& label,
                              bool parameterValuesHaveStrings,
-                             bool isMetaParameter)
+                             bool isMetaParameter,
+                             bool isWritable)
             : pluginInstance (parent),
               paramID (parameterID),
               name (parameterName),
@@ -491,6 +492,7 @@ public:
               maxValue (maxParameterValue),
               range (maxValue - minValue),
               automatable (parameterIsAutomatable),
+              writable(isWritable),
               discrete (parameterIsDiscrete),
               numSteps (numParameterSteps),
               valuesHaveStrings (parameterValuesHaveStrings),
@@ -659,6 +661,7 @@ public:
             return Parameter::getValueForText (text);
         }
 
+        bool isWritable() const override            { return writable; }
         bool isAutomatable() const override         { return automatable; }
         bool isDiscrete() const override            { return discrete; }
         bool isBoolean() const override             { return isSwitch; }
@@ -751,8 +754,8 @@ public:
         const UInt32 paramID;
         String name;
         const AudioUnitParameterValue minValue, maxValue, range;
-        const bool automatable, discrete;
-              int numSteps;
+        const bool automatable, writable, discrete;
+        int numSteps;
         const bool valuesHaveStrings, isSwitch;
         const bool isMeta;
         String valueLabel;
@@ -1676,7 +1679,7 @@ public:
                     const auto label = getParamLabel (info.get());
 
                     bool isMeta = info.get().flags & kAudioUnitParameterFlag_IsGlobalMeta;
-                      
+                    bool isWritable = info.get().flags & kAudioUnitParameterFlag_IsWritable;
                     const auto isDiscrete = (info.get().unit == kAudioUnitParameterUnit_Indexed
                                           || info.get().unit == kAudioUnitParameterUnit_Boolean);
                     const auto isBoolean = info.get().unit == kAudioUnitParameterUnit_Boolean;
@@ -1693,7 +1696,8 @@ public:
                                                                             isBoolean,
                                                                             label,
                                                                             (info.get().flags & kAudioUnitParameterFlag_ValuesHaveStrings) != 0,
-                                                                            isMeta);
+                                                                            isMeta,
+                                                                            isWritable);
 
                     newParamIDToParameter.emplace (ids[i], parameter.get());
 

@@ -136,6 +136,7 @@ public:
     [[deprecated]] int getParameterNumSteps (int parameterIndex) override;
     [[deprecated]] bool isParameterDiscrete (int parameterIndex) const override;
     [[deprecated]] bool isParameterAutomatable (int parameterIndex) const override;
+    [[deprecated]] bool isParameterWritable (int parameterIndex) const override;
     [[deprecated]] float getParameterDefaultValue (int parameterIndex) override;
     [[deprecated]] String getParameterLabel (int parameterIndex) const override;
     [[deprecated]] bool isParameterOrientationInverted (int parameterIndex) const override;

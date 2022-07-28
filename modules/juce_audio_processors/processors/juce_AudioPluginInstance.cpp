@@ -151,6 +151,16 @@ bool AudioPluginInstance::isParameterAutomatable (int parameterIndex) const
     return true;
 }
 
+bool AudioPluginInstance::isParameterWritable(int parameterIndex) const
+{
+    assertOnceOnDeprecatedMethodUse();
+
+    if (auto* param = getParameters()[parameterIndex])
+        return param->isWritable();
+
+    return true;
+}
+
 String AudioPluginInstance::getParameterLabel (int parameterIndex) const
 {
     assertOnceOnDeprecatedMethodUse();
