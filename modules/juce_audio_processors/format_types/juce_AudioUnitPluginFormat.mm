@@ -2580,11 +2580,11 @@ private:
             {
                 // this is dodgy, if no numChannel info then use default?? Only important fo our channelinfo stuff?? ARCPRECEDENCE ARCCHANNELS
                 // we may need a better way here, maybe direct access to au values.
-                numChannelInfos = 0;
-//                numChannelInfos = 1;
-//                channelInfos.malloc (static_cast<size_t> (numChannelInfos));
-//                channelInfos.get()->inChannels  = -1;
-//                channelInfos.get()->outChannels = -1;
+//                numChannelInfos = 0;
+                numChannelInfos = 1;
+                channelInfos.malloc (static_cast<size_t> (numChannelInfos));
+                channelInfos.get()->inChannels  = -1;
+                channelInfos.get()->outChannels = -1;
             }
         }
     }
