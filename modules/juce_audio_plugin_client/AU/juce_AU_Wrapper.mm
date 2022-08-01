@@ -520,16 +520,24 @@ public:
                     {
                         if (juceFilter != nullptr)
                         {
+                            String name;
+                          
                             auto clumpIndex = clumpNameInfo->inID - 1;
                             const auto* group = parameterGroups[(int) clumpIndex];
-                            auto name = group->getName();
-
-                            while (group->getParent() != &juceFilter->getParameterTree())
+                          
+                            if(group)
                             {
-                                group = group->getParent();
-                                name = group->getName() + group->getSeparator() + name;
-                            }
+                                name = group->getName();
 
+                                while (group->getParent() != &juceFilter->getParameterTree())
+                                {
+                                    group = group->getParent();
+                                    name = group->getName() + group->getSeparator() + name;
+                                }
+                            }
+                            else
+                                name = juceFilter->GetGroupName(clumpNameInfo->inID);
+                              
                             clumpNameInfo->outName = name.toCFString();
                             return noErr;
                         }
@@ -999,6 +1007,11 @@ public:
                 {
                     outParameterInfo.flags |= kAudioUnitParameterFlag_HasClump;
                     outParameterInfo.clumpID = (UInt32) parameterGroups.indexOf (parameterGroupHierarchy.getLast()) + 1;
+                }
+                else if(param->getGroupId())
+                {
+                  outParameterInfo.flags |= kAudioUnitParameterFlag_HasClump;
+                  outParameterInfo.clumpID = param->getGroupId();
                 }
 
                 // Is this a meter?

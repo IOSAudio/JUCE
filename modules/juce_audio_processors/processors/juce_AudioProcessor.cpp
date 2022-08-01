@@ -562,6 +562,7 @@ void AudioProcessor::setParameterTree (AudioProcessorParameterGroup&& newTree)
    #if JUCE_DEBUG
     paramIDs.clear();
     groupIDs.clear();
+    trimmedParamIDs.clear();
    #endif
 
     parameterTree = std::move (newTree);
@@ -1680,6 +1681,7 @@ void AudioProcessorParameter::sendValueChangedMessageToListeners (float newValue
 bool AudioProcessorParameter::isOrientationInverted() const                      { return false; }
 bool AudioProcessorParameter::isAutomatable() const                              { return true; }
 bool AudioProcessorParameter::isWritable() const                                 { return true; }
+uint32_t AudioProcessorParameter::getGroupId() const                             { return 0; }
 bool AudioProcessorParameter::isMetaParameter() const                            { return false; }
 AudioProcessorParameter::Category AudioProcessorParameter::getCategory() const   { return genericParameter; }
 int AudioProcessorParameter::getNumSteps() const                                 { return AudioProcessor::getDefaultNumParameterSteps(); }

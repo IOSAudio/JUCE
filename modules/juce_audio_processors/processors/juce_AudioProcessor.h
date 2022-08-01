@@ -874,6 +874,11 @@ public:
       { return -1; }
 #endif
 
+    virtual String GetGroupName(uint32_t groupId) const
+    {
+        return "Group " + String(groupId);
+    }
+
     //==============================================================================
     /** This returns a critical section that will automatically be locked while the host
         is calling the processBlock() method.

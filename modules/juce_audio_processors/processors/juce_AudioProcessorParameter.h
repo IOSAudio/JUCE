@@ -177,6 +177,9 @@ public:
     virtual bool isMetaParameter() const;
 
     virtual bool isWritable() const;
+  
+    virtual uint32_t getGroupId() const;
+
 
     enum Category
     {
@@ -287,7 +290,7 @@ public:
     /** @internal */
     void sendValueChangedMessageToListeners (float newValue);
 
-    int getOrigParameterIndex(void)
+    virtual int getOrigParameterIndex(void) const
     {
         return origParameterIndex;
     }
