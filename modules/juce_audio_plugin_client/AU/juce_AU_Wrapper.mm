@@ -536,8 +536,20 @@ public:
                                 }
                             }
                             else
-                                name = juceFilter->GetGroupName(clumpNameInfo->inID);
-                              
+                            {
+                                if(juce::AudioProcessor::GroupName* groupName = juceFilter->GetGroupName(clumpNameInfo->inID))
+                                {
+                                    name = groupName->sName;
+                                    while(groupName->uParentId != 0)
+                                    {
+                                      juce::AudioProcessor::GroupName* parentGroupName = juceFilter->GetGroupName(groupName->uParentId);
+                                        if(parentGroupName)
+                                            name = parentGroupName->sName + "|" + name;
+                                    }
+                                }
+                                else
+                                    name = "";
+                            }
                             clumpNameInfo->outName = name.toCFString();
                             return noErr;
                         }

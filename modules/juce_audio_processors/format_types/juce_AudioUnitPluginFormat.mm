@@ -733,10 +733,13 @@ public:
 
         float normaliseParamValue (float scaledValue) const noexcept
         {
-            // TODO why was this removed by JUCE. if (discrete)
-            //    return scaledValue / (getNumSteps() - 1);
-
-            return (scaledValue - minValue) / range;
+            // TODO why was this removed by JUCE.
+//            if (discrete)
+//              return scaledValue / (getNumSteps() - 1);
+            if(range == 0)
+              return 1.0f;
+            else
+              return (scaledValue - minValue) / range;
         }
 
         float scaleParamValue (float normalisedValue) const noexcept

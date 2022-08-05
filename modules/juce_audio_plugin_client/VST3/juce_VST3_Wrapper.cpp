@@ -353,7 +353,13 @@ public:
     //==============================================================================
     Steinberg::int32 PLUGIN_API getUnitCount() override
     {
-        return parameterGroups.size() + 1;
+      Steinberg::int32 count = parameterGroups.size() + 1;
+      
+      // if we have no parametergroups then use audioProcessor count
+      if(count == 1)
+        count += audioProcessor->GetGroupCount();
+      
+      return count;
     }
 
     tresult PLUGIN_API getUnitInfo (Steinberg::int32 unitIndex, Vst::UnitInfo& info) override
@@ -376,6 +382,19 @@ public:
             info.programListId  = Vst::kNoProgramListId;
 
             toString128 (info.name, group->getName());
+
+            return kResultTrue;
+        }
+        else if(juce::AudioProcessor::GroupName* groupName = audioProcessor->GetGroupNameForIndex(unitIndex - 1))
+        {
+            // If we have no parameterGroups then use audiprocessor
+            info.id             = groupName->uId;
+            info.parentUnitId   = groupName->uParentId;
+            info.programListId  = Vst::kNoProgramListId;
+
+            toString128 (info.name, groupName->sName);
+
+            printf("*** getUnitInfo[%d] id=%d parent=%d name=%s\n", unitIndex, info.id,  info.parentUnitId, groupName->sName.toRawUTF8());
 
             return kResultTrue;
         }
@@ -940,8 +959,8 @@ public:
             : owner (editController), param (p)
         {
             info.id = vstParamID;
-            info.unitId = vstUnitID;
 
+            info.unitId = vstUnitID; // ARCFATALNOW
             updateParameterInfo();
 
             info.stepCount = (Steinberg::int32) 0;
@@ -984,6 +1003,30 @@ public:
             anyUpdated     |= updateParamIfChanged (info.shortTitle, param.getName (8));
             anyUpdated     |= updateParamIfChanged (info.units,      param.getLabel());
 
+            if(anyUpdated)
+            {
+              info.stepCount = (Steinberg::int32) 0;
+
+             #if ! JUCE_FORCE_LEGACY_PARAMETER_AUTOMATION_TYPE
+              if (param.isDiscrete())
+             #endif
+              {
+                  const int numSteps = param.getNumSteps();
+                  info.stepCount = (Steinberg::int32) (numSteps > 0 && numSteps < 0x7fffffff ? numSteps - 1 : 0);
+              }
+
+              info.defaultNormalizedValue = param.getDefaultValue();
+              //ARCTODO jassert (info.defaultNormalizedValue >= 0 && info.defaultNormalizedValue <= 1.0f);
+
+              // Is this a meter?
+              if ((((unsigned int) param.getCategory() & 0xffff0000) >> 16) == 2)
+                  info.flags = Vst::ParameterInfo::kIsReadOnly;
+              else
+                  info.flags = param.isAutomatable() ? Vst::ParameterInfo::kCanAutomate : 0;
+              
+              info.unitId = param.getGroupId();
+            }
+          
             return anyUpdated;
         }
 
@@ -1704,6 +1747,7 @@ private:
 
                     auto* juceParam = audioProcessor->getParamForVSTParamID (vstParamID);
                     auto* parameterGroup = pluginInstance->getParameterTree().getGroupsForParameter (juceParam).getLast();
+                  
                     auto unitID = JuceAudioProcessor::getUnitID (parameterGroup);
 
                     parameters.addParameter (new Param (*this, *juceParam, vstParamID, unitID,

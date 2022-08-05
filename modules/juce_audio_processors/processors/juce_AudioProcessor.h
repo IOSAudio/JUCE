@@ -874,9 +874,31 @@ public:
       { return -1; }
 #endif
 
-    virtual String GetGroupName(uint32_t groupId) const
+    struct GroupName
     {
-        return "Group " + String(groupId);
+        uint32_t      uId;
+        uint32_t      uParentId;
+        juce::String  sName;
+        
+        GroupName(uint32_t uId, uint32_t uParentId, juce::String sName)
+        : uId(uId), uParentId(uParentId), sName(sName)
+        {
+        }
+    };
+
+    virtual GroupName *GetGroupName(uint32_t groupId) const
+    {
+        return nullptr;
+    }
+  
+    virtual GroupName *GetGroupNameForIndex(uint32_t groupIndex) const
+    {
+        return nullptr;
+    }
+
+    virtual uint32_t GetGroupCount() const
+    {
+        return 0;
     }
 
     //==============================================================================
