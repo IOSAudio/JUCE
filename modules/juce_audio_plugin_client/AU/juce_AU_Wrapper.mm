@@ -1277,7 +1277,25 @@ public:
 
     void audioProcessorChanged (AudioProcessor*, const ChangeDetails& details) override
     {
+        if(details.parameterInfoChanged)
+        {
+            paramMap.clear();
+            auParamIDs.clear();
+            for (auto* param : juceParameters)  // todo we need code like this block when we change plugins, or to bypass auParamIDs and paramMap
+            {
+                const AudioUnitParameterID auParamID = generateAUParameterID (param);
+
+                // Consider yourself very unlucky if you hit this assertion. The hash codes of your
+                // parameter ids are not unique.
+                jassert (! paramMap.contains (static_cast<int32> (auParamID)));
+
+                auParamIDs.add (auParamID);
+                paramMap.set (static_cast<int32> (auParamID), param);
+                Globals()->SetParameter (auParamID, param->getValue());
+            }
+        }
         audioProcessorChangedUpdater.update (details);
+      
     }
 
     //==============================================================================
