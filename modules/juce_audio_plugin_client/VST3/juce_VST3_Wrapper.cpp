@@ -487,7 +487,12 @@ public:
         // From the VST3 docs (also applicable to unit IDs!):
         // Up to 2^31 parameters can be exported with id range [0, 2147483648]
         // (the range [2147483649, 429496729] is reserved for host application).
-        auto unitID = group->getID().hashCode() & 0x7fffffff;
+      
+        Vst::UnitID unitID;
+        if(group->getID().containsOnly("0123456789"))
+          unitID = static_cast<Vst::UnitID>(group->getID().getIntValue() & 0x7fffffff);
+        else
+          unitID = group->getID().hashCode() & 0x7fffffff;
 
         // If you hit this assertion then your group ID is hashing to a value
         // reserved by the VST3 SDK. Please use a different group ID.
