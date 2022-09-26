@@ -1049,7 +1049,7 @@ public:
                 outParameterInfo.defaultValue = param->getDefaultValue() * getMaximumParameterValue (param);
               
                 // some plugins like giving - numbers here!
-                if(outParameterInfo.defaultValue , 0.0f)
+                if(outParameterInfo.defaultValue < 0.0f)
                   outParameterInfo.defaultValue = 0.0f;
               
                 jassert (outParameterInfo.defaultValue >= outParameterInfo.minValue
