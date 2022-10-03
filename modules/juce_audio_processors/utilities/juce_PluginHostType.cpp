@@ -214,7 +214,7 @@ PluginHostType::HostType PluginHostType::getHostType()
     if (hostFilename.containsIgnoreCase   ("OsxFL"))                    return FruityLoops;
     if (hostFilename.containsIgnoreCase   ("pluginval"))                return pluginval;
     if (hostFilename.containsIgnoreCase   ("AudioPluginHost"))          return JUCEPluginHost;
-    if (hostFilename.containsIgnoreCase   ("Vienna Ensemble Pro"))      return ViennaEnsemblePro;
+    if (hostFilename.containsIgnoreCase   ("Maschine"))                 return NIMaschine;
 
     if (hostIdReportedByWrapper == "com.apple.logic.pro")               return AppleLogic;
     if (hostIdReportedByWrapper == "com.apple.garageband")              return AppleGarageBand;
@@ -295,6 +295,7 @@ PluginHostType::HostType PluginHostType::getHostType()
     if (hostFilename.containsIgnoreCase   ("pluginval"))             return pluginval;
     if (hostFilename.containsIgnoreCase   ("AudioPluginHost"))       return JUCEPluginHost;
     if (hostFilename.containsIgnoreCase   ("Vienna Ensemble Pro"))   return ViennaEnsemblePro;
+    if (hostFilename.containsIgnoreCase   ("Maschine"))              return NIMaschine;
 
    #elif JUCE_LINUX || JUCE_BSD
     if (hostFilename.containsIgnoreCase   ("Ardour"))            return Ardour;
