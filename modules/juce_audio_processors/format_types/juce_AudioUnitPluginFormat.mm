@@ -2588,7 +2588,6 @@ private:
 //                channelInfos.malloc (static_cast<size_t> (numChannelInfos));
 //                channelInfos.get()->inChannels  = -1;
 //                channelInfos.get()->outChannels = -1;
-              }
             }
         }
     }
