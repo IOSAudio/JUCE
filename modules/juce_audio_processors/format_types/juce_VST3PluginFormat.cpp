@@ -3240,7 +3240,6 @@ private:
             group->addChild (std::unique_ptr<AudioProcessorParameter> (param));
         }
 
-        // TODOMERGE lookat this
         if(newParameterTree.differentTo(getParameterTree()))
         {
 	        setHostedParameterTree (std::move (newParameterTree));

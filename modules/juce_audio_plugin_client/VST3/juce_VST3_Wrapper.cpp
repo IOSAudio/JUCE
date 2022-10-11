@@ -723,9 +723,26 @@ public:
         }
         return result;
     }
-  
+
+    #define TEST_FOR_AND_RETURN_IF_VALID(iidToTest, ClassType) \
+    if (doUIDsMatch (iidToTest, ClassType::iid)) \
+    { \
+        addRef(); \
+        *obj = dynamic_cast<ClassType*> (this); \
+printf("YIPEEEE\n"); \
+        return Steinberg::kResultOk; \
+    }
+
     tresult PLUGIN_API queryInterface (const TUID targetIID, void** obj) override
     {
+        TEST_FOR_AND_RETURN_IF_VALID (targetIID, Presonus::IContextInfoHandler)
+        TEST_FOR_AND_RETURN_IF_VALID (targetIID, Presonus::IContextInfoHandler2)
+
+        if (metersParamIDs.size() > 0)
+        {
+          TEST_FOR_AND_RETURN_IF_VALID (targetIID, Presonus::IGainReductionInfo)
+        }
+
         QueryInterfaceResult userProvidedInterface;
         if(queryInterfaceAudioProcessor)
         {
@@ -744,29 +761,8 @@ public:
         const auto juceProvidedInterface = queryInterfaceInternal (targetIID);
 
         Steinberg::tresult result =  extractResult (userProvidedInterface, juceProvidedInterface, obj);
-        //printf(" QueryInterface Result = %d\n", result);
         return result;
       
-		// TODOMERGE THIS needs moving into the new code
-#ifdef OLD
-        TEST_FOR_AND_RETURN_IF_VALID (targetIID, Presonus::IContextInfoHandler)
-        TEST_FOR_AND_RETURN_IF_VALID (targetIID, Presonus::IContextInfoHandler2)
-
-        if (metersParamIDs.size() > 0)
-        {
-          TEST_FOR_AND_RETURN_IF_VALID (targetIID, Presonus::IGainReductionInfo)
-        }
-
-        if (doUIDsMatch (targetIID, JuceAudioProcessor::iid))
-        {
-            audioProcessor->addRef();
-            *obj = audioProcessor;
-            return kResultOk;
-        }
-
-        *obj = nullptr;
-        return kNoInterface;
-#endif
     }
 
     //==============================================================================

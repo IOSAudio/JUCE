@@ -388,7 +388,7 @@ struct AudioUnitHelpers
         // testing back with 0
         // I'm beginning to think of sidestepping the juce code and using the actual hosted values?
         // 1 works for battery, 0 for others. arghh
-        int mainBusBaseChannel = 0;
+        int mainBusBaseChannel = 1;
 
         // add the current configuration
         if (defaultInputs != 0 || defaultOutputs != 0)
@@ -475,12 +475,9 @@ struct AudioUnitHelpers
         {
           for(int output = hasMainOutputBus ? mainBusBaseChannel : 0; bValidSeq && output <= maxNumOutputs; output++)
           {
-            //TODOMERGE recode this for set
-//            int n = ((input << 16) + output);
-//            if(supportedChannels[nIndex]. != n)
-//              bValidSeq = false;
-//            else
-//              nIndex++;
+            Channels channelConfiguration { static_cast<SInt16> (input),
+                                            static_cast<SInt16> (output) };
+            bValidSeq = supportedChannels.contains(channelConfiguration);
           }
         }
       
@@ -493,25 +490,25 @@ struct AudioUnitHelpers
         }
         else
         {
-        for (const auto& supported : supportedChannels)
-          {
-              AUChannelInfo info;
+            for (const auto& supported : supportedChannels)
+            {
+                AUChannelInfo info;
 
-              // see here: https://developer.apple.com/library/mac/documentation/MusicAudio/Conceptual/AudioUnitProgrammingGuide/TheAudioUnit/TheAudioUnit.html
-            info.inChannels  = static_cast<SInt16> (hasMainInputBus  ? (hasUnsupportedInput  ? supported.ins  : (hasInOutMismatch && (! hasUnsupportedOutput) ? -2 : -1)) : 0);
-            info.outChannels = static_cast<SInt16> (hasMainOutputBus ? (hasUnsupportedOutput ? supported.outs : (hasInOutMismatch && (! hasUnsupportedInput)  ? -2 : -1)) : 0);
+                // see here: https://developer.apple.com/library/mac/documentation/MusicAudio/Conceptual/AudioUnitProgrammingGuide/TheAudioUnit/TheAudioUnit.html
+                info.inChannels  = static_cast<SInt16> (hasMainInputBus  ? (hasUnsupportedInput  ? supported.ins  : (hasInOutMismatch && (! hasUnsupportedOutput) ? -2 : -1)) : 0);
+                info.outChannels = static_cast<SInt16> (hasMainOutputBus ? (hasUnsupportedOutput ? supported.outs : (hasInOutMismatch && (! hasUnsupportedInput)  ? -2 : -1)) : 0);
 
-              if (info.inChannels == -2 && info.outChannels == -2)
-                  info.inChannels = -1;
+                if (info.inChannels == -2 && info.outChannels == -2)
+                    info.inChannels = -1;
 
-              int j;
-              for (j = 0; j < channelInfo.size(); ++j)
-                  if (info.inChannels == channelInfo.getReference (j).inChannels
-                        && info.outChannels == channelInfo.getReference (j).outChannels)
-                      break;
+                int j;
+                for (j = 0; j < channelInfo.size(); ++j)
+                    if (info.inChannels == channelInfo.getReference (j).inChannels
+                          && info.outChannels == channelInfo.getReference (j).outChannels)
+                        break;
 
-              if (j >= channelInfo.size())
-                  channelInfo.add (info);
+                if (j >= channelInfo.size())
+                    channelInfo.add (info);
           }
         }
       

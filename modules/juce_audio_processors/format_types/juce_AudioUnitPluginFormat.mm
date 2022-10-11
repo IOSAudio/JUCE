@@ -1643,7 +1643,6 @@ public:
         }
     }
 
-	// TODOMERGE lookat this method
     bool refreshParameterList() override
     {
         std::map<UInt32, AUInstanceParameter*> newParamIDToParameter;
