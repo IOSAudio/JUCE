@@ -176,10 +176,10 @@ public:
     */
     virtual bool isMetaParameter() const;
 
+	// CAD Change START
     virtual bool isWritable() const;
-  
     virtual uint32_t getGroupId() const;
-
+	// CAD Change END
 
     enum Category
     {
@@ -290,6 +290,7 @@ public:
     /** @internal */
     void sendValueChangedMessageToListeners (float newValue);
 
+	// CAD Change START
     virtual int getOrigParameterIndex(void) const
     {
         return origParameterIndex;
@@ -309,14 +310,18 @@ public:
     {
         programChange = isProgramChange;
     }
+	// CAD Change END
+	
 private:
     //==============================================================================
     friend class AudioProcessor;
     friend class LegacyAudioParameter;
     AudioProcessor* processor = nullptr;
     int parameterIndex = -1;
+	// CAD Change START
     int origParameterIndex = -1;
     bool programChange = false;
+	// CAD Change END
     CriticalSection listenerLock;
     Array<Listener*> listeners;
     mutable StringArray valueStrings;

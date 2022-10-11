@@ -82,10 +82,12 @@ bool AudioProcessor::addBus (bool isInput)
     return true;
 }
 
+// CAD Change START
 void AudioProcessor::addBus (bool isInput, BusProperties& busesProps)
 {
   createBus (isInput, busesProps);
 }
+// CAD Change END
 
 bool AudioProcessor::removeBus (bool inputBus)
 {
@@ -110,6 +112,7 @@ bool AudioProcessor::removeBus (bool inputBus)
     return true;
 }
 
+// CAD Change START
 void AudioProcessor::removeBusNoChecks (bool inputBus)
 {
   auto numBuses = getBusCount (inputBus);
@@ -120,6 +123,7 @@ void AudioProcessor::removeBusNoChecks (bool inputBus)
   
   audioIOChanged (true, numChannels > 0);
 }
+// CAD Change END
 
 //==============================================================================
 bool AudioProcessor::setBusesLayout (const BusesLayout& arr)
@@ -228,12 +232,6 @@ bool AudioProcessor::enableAllBuses()
 
 bool AudioProcessor::checkBusesLayoutSupported (const BusesLayout& layouts) const
 {
-//  auto ib = inputBuses.size();
-//  auto ob = outputBuses.size();
-//  auto cib = layouts.inputBuses.size();
-//  auto cob = layouts.outputBuses.size();
-
-//  printf("checkBusesLayoutSupported %u, %u looking for %u, %u\n", ib, ob, cib, cob);
     if (layouts.inputBuses.size() == inputBuses.size()
           && layouts.outputBuses.size() == outputBuses.size())
         return isBusesLayoutSupported (layouts);
@@ -562,7 +560,9 @@ void AudioProcessor::setParameterTree (AudioProcessorParameterGroup&& newTree)
    #if JUCE_DEBUG
     paramIDs.clear();
     groupIDs.clear();
+	// CAD Change START
     trimmedParamIDs.clear();
+	// CAD Change END
    #endif
 
     parameterTree = std::move (newTree);
@@ -580,10 +580,12 @@ void AudioProcessor::setParameterTree (AudioProcessorParameterGroup&& newTree)
     }
 }
 
+// CAD Change START
 bool AudioProcessor::refreshParameterList()
 {
   return false;
 }
+// CAD Change END
 
 int AudioProcessor::getDefaultNumParameterSteps() noexcept
 {
@@ -854,8 +856,10 @@ bool AudioProcessor::applyBusLayouts (const BusesLayout& layouts)
 
 void AudioProcessor::audioIOChanged (bool busNumberChanged, bool channelNumChanged)
 {
+	// CAD Change START LOOKAT
     // ARCFATAL but channel layouts not updated for dynamic buses!
-  
+  	// CAD Change END LOOKAT
+	
     auto numInputBuses  = getBusCount (true);
     auto numOutputBuses = getBusCount (false);
 
@@ -1098,7 +1102,9 @@ bool AudioProcessor::Bus::isLayoutSupported (const AudioChannelSet& set, BusesLa
             *ioLayout = owner.getBusesLayout();
 
             // the current layout you supplied is not a valid layout
+			// CAD Change START LOOKAT
             //ARCFATAL jassertfalse;
+			// CAD Change END LOOKAT
         }
     }
 
@@ -1278,7 +1284,7 @@ const char* AudioProcessor::getWrapperTypeDescription (AudioProcessor::WrapperTy
 //==============================================================================
 JUCE_BEGIN_IGNORE_WARNINGS_GCC_LIKE ("-Wdeprecated-declarations")
 JUCE_BEGIN_IGNORE_WARNINGS_MSVC (4996)
-
+// CAD Change START
 void AudioProcessor::setParameterNotifyingHost (int parameterIndex, float newValue)
 {
   if (auto* param = getParameters()[parameterIndex])
@@ -1290,15 +1296,6 @@ void AudioProcessor::setParameterNotifyingHost (int parameterIndex, float newVal
       setParameter (parameterIndex, newValue);
       sendParamChangeMessageToListeners (parameterIndex, newValue);
   }
-//    if (auto* param = getParameters()[parameterIndex])
-//    {
-//        param->setValueNotifyingHost (newValue);
-//    }
-//    else if (isPositiveAndBelow (parameterIndex, getNumParameters()))
-//    {
-//        setParameter (parameterIndex, newValue);
-//        sendParamChangeMessageToListeners (parameterIndex, newValue);
-//    }
 }
 
 void AudioProcessor::sendParamChangeMessageToListeners (int parameterIndex, float newValue)
@@ -1313,24 +1310,6 @@ void AudioProcessor::sendParamChangeMessageToListeners (int parameterIndex, floa
           if (auto* l = getListenerLocked (i))
               l->audioProcessorParameterChanged (this, parameterIndex, newValue);
   }
-
-//    if (auto* param = getParameters()[parameterIndex])
-//    {
-//        param->sendValueChangedMessageToListeners (newValue);
-//    }
-//    else
-//    {
-//        if (isPositiveAndBelow (parameterIndex, getNumParameters()))
-//        {
-//            for (int i = listeners.size(); --i >= 0;)
-//                if (auto* l = getListenerLocked (i))
-//                    l->audioProcessorParameterChanged (this, parameterIndex, newValue);
-//        }
-//        else
-//        {
-//            jassertfalse; // called with an out-of-range parameter index!
-//        }
-//    }
 }
 
 void AudioProcessor::beginParameterChangeGesture (int parameterIndex)
@@ -1352,31 +1331,6 @@ void AudioProcessor::beginParameterChangeGesture (int parameterIndex)
           if (auto* l = getListenerLocked (i))
               l->audioProcessorParameterChangeGestureBegin (this, parameterIndex);
   }
-
-//    if (auto* param = getParameters()[parameterIndex])
-//    {
-//        param->beginChangeGesture();
-//    }
-//    else
-//    {
-//        if (isPositiveAndBelow (parameterIndex, getNumParameters()))
-//        {
-//           #if JUCE_DEBUG && ! JUCE_DISABLE_AUDIOPROCESSOR_BEGIN_END_GESTURE_CHECKING
-//            // This means you've called beginParameterChangeGesture twice in succession without a matching
-//            // call to endParameterChangeGesture. That might be fine in most hosts, but better to avoid doing it.
-//            //ARCJUCE jassert (! changingParams[parameterIndex]);
-//            changingParams.setBit (parameterIndex);
-//           #endif
-//
-//            for (int i = listeners.size(); --i >= 0;)
-//                if (auto* l = getListenerLocked (i))
-//                    l->audioProcessorParameterChangeGestureBegin (this, parameterIndex);
-//        }
-//        else
-//        {
-//            jassertfalse; // called with an out-of-range parameter index!
-//        }
-//    }
 }
 
 void AudioProcessor::endParameterChangeGesture (int parameterIndex)
@@ -1400,32 +1354,8 @@ void AudioProcessor::endParameterChangeGesture (int parameterIndex)
               l->audioProcessorParameterChangeGestureEnd (this, parameterIndex);
   }
 
-//    if (auto* param = getParameters()[parameterIndex])
-//    {
-//        param->endChangeGesture();
-//    }
-//    else
-//    {
-//        if (isPositiveAndBelow (parameterIndex, getNumParameters()))
-//        {
-//           #if JUCE_DEBUG && ! JUCE_DISABLE_AUDIOPROCESSOR_BEGIN_END_GESTURE_CHECKING
-//            // This means you've called endParameterChangeGesture without having previously called
-//            // beginParameterChangeGesture. That might be fine in most hosts, but better to keep the
-//            // calls matched correctly.
-//            jassert (changingParams[parameterIndex]);
-//            changingParams.clearBit (parameterIndex);
-//           #endif
-//
-//            for (int i = listeners.size(); --i >= 0;)
-//                if (auto* l = getListenerLocked (i))
-//                    l->audioProcessorParameterChangeGestureEnd (this, parameterIndex);
-//        }
-//        else
-//        {
-//            jassertfalse; // called with an out-of-range parameter index!
-//        }
-//    }
 }
+// CAD Change END
 
 String AudioProcessor::getParameterName (int index, int maximumStringLength)
 {
@@ -1534,6 +1464,7 @@ bool AudioProcessor::isParameterAutomatable (int index) const
     return true;
 }
 
+// CAD Change START
 bool AudioProcessor::isParameterWritable (int index) const
 {
     if (auto* p = getParameters()[index])
@@ -1541,7 +1472,7 @@ bool AudioProcessor::isParameterWritable (int index) const
 
     return true;
 }
-
+// CAD Change END
 bool AudioProcessor::isParameterOrientationInverted (int index) const
 {
     if (auto* p = getParameters()[index])
@@ -1680,8 +1611,10 @@ void AudioProcessorParameter::sendValueChangedMessageToListeners (float newValue
 
 bool AudioProcessorParameter::isOrientationInverted() const                      { return false; }
 bool AudioProcessorParameter::isAutomatable() const                              { return true; }
+// CAD Change START
 bool AudioProcessorParameter::isWritable() const                                 { return true; }
 uint32_t AudioProcessorParameter::getGroupId() const                             { return 0; }
+// CAD Change END
 bool AudioProcessorParameter::isMetaParameter() const                            { return false; }
 AudioProcessorParameter::Category AudioProcessorParameter::getCategory() const   { return genericParameter; }
 int AudioProcessorParameter::getNumSteps() const                                 { return AudioProcessor::getDefaultNumParameterSteps(); }

@@ -288,8 +288,9 @@ public:
         vstEffect.numOutputs = maxNumOutChannels;
         vstEffect.initialDelay = processor->getLatencySamples();
         vstEffect.object = this;
+		// CAD Change START
         vstEffect.uniqueID = processor->getVSTUniqueId();
-
+		// CAD Change END
        #ifdef JucePlugin_VSTChunkStructureVersion
         vstEffect.version = JucePlugin_VSTChunkStructureVersion;
        #else
@@ -307,11 +308,13 @@ public:
 
         vstEffect.flags |= Vst2::effFlagsProgramChunks;
 
+		// CAD Change START
         if(processor->isSynth())
           vstEffect.flags |= Vst2::effFlagsIsSynth;
         else
           if (processor->getTailLengthSeconds() == 0.0)
               vstEffect.flags |= Vst2::effFlagsNoSoundInStop;
+		// CAD Change END
 
        #if JUCE_WINDOWS
         ++numActivePlugins;
@@ -1746,7 +1749,8 @@ private:
 
     pointer_sized_int handleGetPlugInCategory (VstOpCodeArguments)
     {
-        static std::map<juce::String, pointer_sized_int> catMap =
+		// CAD Change START
+	    static std::map<juce::String, pointer_sized_int> catMap =
         {
             {"Effect",          Vst2::kPlugCategEffect},
             {"Synth",           Vst2::kPlugCategSynth},
@@ -1777,6 +1781,7 @@ private:
         }
       
         return nCat;
+		// CAD Change END
     }
 
     pointer_sized_int handleSetSpeakerConfiguration (VstOpCodeArguments args)
@@ -1839,8 +1844,10 @@ private:
 
     pointer_sized_int handleGetPlugInName (VstOpCodeArguments args)
     {
+		// CAD Change START
         processor->getName().copyToUTF8 ((char*) args.ptr, 64 + 1);
         //String (JucePlugin_Name).copyToUTF8 ((char*) args.ptr, 64 + 1);
+		// CAD Change END
         return 1;
     }
 

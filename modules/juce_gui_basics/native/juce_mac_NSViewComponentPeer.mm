@@ -327,9 +327,11 @@ public:
     void setBounds (const Rectangle<int>& newBounds, bool) override
     {
         auto r = makeNSRect (newBounds);
+		// CAD Change START
         auto oldR = view.frame;
         if(!NSEqualRects(r, oldR))
         {
+		// CAD Change END
           auto oldViewSize = [view frame].size;
 
           if (isSharedWindow)
@@ -349,7 +351,9 @@ public:
 
           if (oldViewSize.width != r.size.width || oldViewSize.height != r.size.height)
               [view setNeedsDisplay: true];
+		// CAD Change START
         }
+		// CAD Change END
     }
 
     Rectangle<int> getBounds (const bool global) const

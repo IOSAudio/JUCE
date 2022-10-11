@@ -142,6 +142,7 @@ private:
         }
     }
 
+  // CAD Change START LOOKAT MAY BE FIXED IN V7
   struct InnerNSView : public ObjCClass<NSView>
    {
        InnerNSView()
@@ -172,7 +173,7 @@ private:
        static InnerNSView result;
        return result;
    }
-  
+   // CAD Changed END
 };
 
 #endif

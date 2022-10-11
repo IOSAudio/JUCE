@@ -181,9 +181,11 @@ inline void toString128 (Steinberg::Vst::String128 result, const juce::String& s
  static const Steinberg::FIDString defaultVST3WindowType = Steinberg::kPlatformTypeX11EmbedWindowID;
 #endif
 
+// CAD Change START
 #ifndef STDMETHODCALLTYPE
   #define STDMETHODCALLTYPE
 #endif
+// CAD Change END
 
 //==============================================================================
 static inline Steinberg::Vst::SpeakerArrangement getArrangementForBus (Steinberg::Vst::IAudioProcessor* processor,

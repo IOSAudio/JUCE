@@ -151,6 +151,7 @@ bool AudioPluginInstance::isParameterAutomatable (int parameterIndex) const
     return true;
 }
 
+// CAD Change START
 bool AudioPluginInstance::isParameterWritable(int parameterIndex) const
 {
     assertOnceOnDeprecatedMethodUse();
@@ -160,6 +161,7 @@ bool AudioPluginInstance::isParameterWritable(int parameterIndex) const
 
     return true;
 }
+// CAD Change END
 
 String AudioPluginInstance::getParameterLabel (int parameterIndex) const
 {
@@ -241,8 +243,10 @@ String AudioPluginInstance::Parameter::getText (float value, int maximumStringLe
     if (isBoolean())
         return value < 0.5f ? TRANS("Off") : TRANS("On");
 
+	// CAD Change START LOOKAT
     // TODO need to parametise this
     return String (value, 2, false).substring (0, maximumStringLength);
+	// CAD Change END LOOKAT
 }
 
 float AudioPluginInstance::Parameter::getValueForText (const String& text) const

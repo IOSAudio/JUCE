@@ -71,7 +71,7 @@ namespace AudioUnitFormatHelpers
                                   (juce_wchar) ((type >> 16) & 0xff),
                                   (juce_wchar) ((type >> 8) & 0xff),
                                   (juce_wchar) (type & 0xff) };
-      
+		// CAD Change START
         String result = String (s, 4);
         if(result.length() != 4)
         {
@@ -83,10 +83,12 @@ namespace AudioUnitFormatHelpers
         }
         
         return result;
+		// CAD Change END
     }
 
     static OSType stringToOSType (String s)
     {
+		// CAD Change START
         OSType result;
         if(s.length() == 4)
         {
@@ -100,7 +102,8 @@ namespace AudioUnitFormatHelpers
             ss << std::hex << s;
             ss >> result;
         }
-      return result;
+      	return result;
+		// CAD Change END
     }
 
     static const char* auIdentifierPrefix = "AudioUnit:";
@@ -152,6 +155,7 @@ namespace AudioUnitFormatHelpers
     {
         if (fileOrIdentifier.startsWithIgnoreCase (auIdentifierPrefix))
         {
+			// CAD Change START
             // Original code doesnt work for codes containing ',', ':' or '/'
             // find first slash, then codes are always 4 bytes sperated by commas
 
@@ -190,6 +194,7 @@ namespace AudioUnitFormatHelpers
                     return true;
                 }
             }
+			// CAD Change END
         }
 
         return false;
@@ -326,6 +331,7 @@ namespace AudioUnitFormatHelpers
     struct AutoResizingNSViewComponent  : public ViewComponentBaseClass,
                                           private AsyncUpdater
     {
+	// CAD Change START
 #define IMPROVE_RESIZEING_FOR_AU 1
 #if IMPROVE_RESIZEING_FOR_AU
         // ARC Improve issue with AU window resizeing
@@ -358,6 +364,7 @@ namespace AudioUnitFormatHelpers
         void childBoundsChangedshit (Component*) override  { triggerAsyncUpdate(); }
         void handleAsyncUpdateshit() override              { resizeToFitView(); }
 #endif
+	// CAD Change END
     };
   #endif
 
@@ -483,8 +490,10 @@ public:
                              bool isBoolean,
                              const String& label,
                              bool parameterValuesHaveStrings,
+							 // CAD Change START
                              bool isMetaParameter,
                              bool isWritable)
+							 // CAD Change END
             : pluginInstance (parent),
               paramID (parameterID),
               name (parameterName),
@@ -492,15 +501,20 @@ public:
               maxValue (maxParameterValue),
               range (maxValue - minValue),
               automatable (parameterIsAutomatable),
+			  // CAD Change START
               writable(isWritable),
+			  // CAD Change END
               discrete (parameterIsDiscrete),
               numSteps (numParameterSteps),
               valuesHaveStrings (parameterValuesHaveStrings),
               isSwitch (isBoolean),
               valueLabel (label),
               defaultValue (normaliseParamValue (defaultParameterValue)),
+			  // CAD Change START
               isMeta(isMetaParameter)
+			  // CAD Change END
         {
+			// CAD Change START
             // Store original parameter index in base
             setOrigParameterIndex((int)parameterID);
 
@@ -552,6 +566,7 @@ public:
                 }
               }
             }
+			// CAD Change END
         }
 
         float getValue() const override
@@ -661,12 +676,16 @@ public:
             return Parameter::getValueForText (text);
         }
 
-        bool isWritable() const override            { return writable; }
-        bool isAutomatable() const override         { return automatable; }
+        // CAD Change START
+		bool isWritable() const override            { return writable; }
+        // CAD Change END
+		bool isAutomatable() const override         { return automatable; }
         bool isDiscrete() const override            { return discrete; }
         bool isBoolean() const override             { return isSwitch; }
-        bool isMetaParameter() const  override      { return isMeta; }
-        int getNumSteps() const override            { return numSteps; }
+        // CAD Change START
+		bool isMetaParameter() const  override      { return isMeta; }
+        // CAD Change END
+		int getNumSteps() const override            { return numSteps; }
 
         StringArray getAllValueStrings() const override
         {
@@ -678,7 +697,7 @@ public:
             return String (paramID);
         }
   
-      
+      	// CAD Change START
 #define SEND_PARAMETER_CHANGE_EVENT_ON_MAIN_THREAD
         void sendParameterChangeEvent()
         {
@@ -731,14 +750,14 @@ public:
             #endif
         }
 
+		// CAD Change START
         float normaliseParamValue (float scaledValue) const noexcept
         {
-            // TODO why was this removed by JUCE.
-//            if (discrete)
-//              return scaledValue / (getNumSteps() - 1);
+			// CAD Change START
             if(range == 0)
               return 1.0f;
             else
+			// CAD Change END
               return (scaledValue - minValue) / range;
         }
 
@@ -757,10 +776,14 @@ public:
         const UInt32 paramID;
         String name;
         const AudioUnitParameterValue minValue, maxValue, range;
+		// CAD Change START
         const bool automatable, writable, discrete;
+		// CAD Change END
         int numSteps;
         const bool valuesHaveStrings, isSwitch;
+		// CAD Change START
         const bool isMeta;
+		// CAD Change END
         String valueLabel;
         const AudioUnitParameterValue defaultValue;
         StringArray auValueStrings;
@@ -861,6 +884,7 @@ public:
         return true;
     }
 
+	// CAD Change START
     std::unique_ptr<Array<std::pair<int16_t, int16_t>>> getSupportedChannelInfo(void) override
     {
       std::unique_ptr<Array<std::pair<int16_t, int16_t>>> result = std::make_unique<Array<std::pair<int16_t, int16_t>>>();
@@ -878,7 +902,8 @@ public:
       std::unique_ptr<Array<uint32_t>> result = std::make_unique<Array<uint32_t>>(bIsInput ? supportedInLayoutTags : supportedOutLayoutTags);
       return result;
     };
-
+	// CAD Change END
+	
     //==============================================================================
     bool canAddBus (bool isInput)    const override                   { return isBusCountWritable (isInput); }
     bool canRemoveBus (bool isInput) const override                   { return isBusCountWritable (isInput); }
@@ -889,8 +914,7 @@ public:
         auto newCount = (UInt32) ((int) currentCount + (isAdding ? 1 : -1));
         AudioUnitScope scope = isInput ? kAudioUnitScope_Input : kAudioUnitScope_Output;
 
-        OSStatus status = AudioUnitSetProperty (audioUnit, kAudioUnitProperty_ElementCount, scope, 0, &newCount, sizeof (newCount));
-        if ( status== noErr)
+        if (AudioUnitSetProperty (audioUnit, kAudioUnitProperty_ElementCount, scope, 0, &newCount, sizeof (newCount)) == noErr)
         {
             getBusProperties (isInput, currentCount, outProperties.busName, outProperties.defaultLayout);
             outProperties.isActivatedByDefault = true;
@@ -925,6 +949,7 @@ public:
                 if (requested.isDisabled())
                   return false;
               
+			  	// CAD Change START
 #define CHANNELS_ONLY
 #ifndef CHANNELS_ONLY
                 // ARCCHANNELS
@@ -937,7 +962,8 @@ public:
                 if (possible.size() > 0 && ! possible.contains (requested))
                     return false;
 #endif
-              
+              	// CAD Change END
+				
                 int i;
                 for (i = 0; i < numChannelInfos; ++i)
                 {
@@ -1070,6 +1096,7 @@ public:
                         // try to convert the layout into a tag
                         actualTag = CoreAudioLayouts::toCoreAudio (CoreAudioLayouts::fromCoreAudio (layout));
                       
+					  	// CAD Change START
                         // ARCCHANNEL sometimes we get a mismatch on layout but channel count is correct
 #define CHANNEL_COUNT_ONLY
 #ifdef CHANNEL_COUNT_ONLY
@@ -1077,6 +1104,7 @@ public:
 #else
                         if (actualTag != requestedTag) // base on layout tag
 #endif
+						// CAD Change END
                         {
                             zerostruct (layout);
                             layout.mChannelLayoutTag = requestedTag;
@@ -1313,8 +1341,10 @@ public:
     void processAudio (AudioBuffer<float>& buffer, MidiBuffer& midiMessages, bool processBlockBypassedCalled)
     {
         // If these are hit, we might allocate in the process block!
+		// CAD Change START
         //jassert (buffer.getNumChannels() <= preparedChannels);
         //jassert (buffer.getNumSamples()  <= preparedSamples);
+		// CAD Change END
         // Copy the input buffer to guard against the case where a bus has more output channels
         // than input channels, so rendering the output for that bus might stamp over the input
         // to the following bus.
@@ -1576,7 +1606,9 @@ public:
 
     void changeProgramName (int /*index*/, const String& /*newName*/) override
     {
+		// CAD Change START
         //jassertfalse; // xxx not implemented!
+		// CAD Change END
     }
 
     //==============================================================================
@@ -1642,10 +1674,11 @@ public:
             sendAllParametersChangedEvents();
         }
     }
-
+	// CAD Change START
     bool refreshParameterList() override
     {
         std::map<UInt32, AUInstanceParameter*> newParamIDToParameter;
+	// CAD Change END
         AudioProcessorParameterGroup newParameterTree;
 
         if (audioUnit != nullptr)
@@ -1657,8 +1690,9 @@ public:
             haveParameterList = (paramListSize > 0 && err == noErr);
 
             if (! haveParameterList)
+				// CAD Change START
                 return false;
-
+				// CAD Change END
             if (paramListSize > 0)
             {
                 const size_t numParams = paramListSize / sizeof (int);
@@ -1680,8 +1714,10 @@ public:
                     const auto paramName = getParamName (info.get());
                     const auto label = getParamLabel (info.get());
 
+					// CAD Change START
                     bool isMeta = info.get().flags & kAudioUnitParameterFlag_IsGlobalMeta;
                     bool isWritable = info.get().flags & kAudioUnitParameterFlag_IsWritable;
+					// CAD Change END
                     const auto isDiscrete = (info.get().unit == kAudioUnitParameterUnit_Indexed
                                           || info.get().unit == kAudioUnitParameterUnit_Boolean);
                     const auto isBoolean = info.get().unit == kAudioUnitParameterUnit_Boolean;
@@ -1698,11 +1734,15 @@ public:
                                                                             isBoolean,
                                                                             label,
                                                                             (info.get().flags & kAudioUnitParameterFlag_ValuesHaveStrings) != 0,
+																			// CAD Change START
                                                                             isMeta,
                                                                             isWritable);
+																			// CAD Change END
 
+					// CAD Change START
                     newParamIDToParameter.emplace (ids[i], parameter.get());
-
+					// CAD Change END
+					
                     if (info.get().flags & kAudioUnitParameterFlag_HasClump)
                     {
                         auto groupInfo = groupIDMap.find (info.get().clumpID);
@@ -1748,12 +1788,13 @@ public:
         }
 
 
+		// CAD Change START
         if(newParameterTree.differentTo(getParameterTree()))
         {
           
             paramIDToParameter.clear();
             paramIDToParameter = newParamIDToParameter;
-          
+        // CAD Change END  
             setHostedParameterTree (std::move (newParameterTree));
             UInt32 propertySize = 0;
             Boolean writable = false;
@@ -1762,29 +1803,14 @@ public:
                                                           kAudioUnitScope_Global, 0, &propertySize, &writable) == noErr
                                 && propertySize >= sizeof (UInt32) && writable);
             bypassParam.reset (new AUBypassParameter (*this));
-
-            // ARCMERGE look at this
-
-            // ok here we have the flatparameterlist with its wonky indexing so we need to fixup paramIDToIndex to match it
-            // this may be fixed now after merge, lets test
-          
-//            paramIDToParameter.clear();
-//            auto parameters = getParameters();
-//            for(auto param : getParameters())
-//            {
-//              printf("paramIDToParameter[%u] = %u\n", (uint32_t)param->getOrigParameterIndex(), (uint32_t)param->getParameterIndex());
-//              jassert (dynamic_cast<AUInstanceParameter*> (param) != nullptr);
-//              paramIDToParameter.emplace((UInt32)param->getOrigParameterIndex(), dynamic_cast<AUInstanceParameter*> (param));
-//            }
-          
-          
+        // CAD Change START  
             return true;
         }
         else
         {
             return false;
         }
-      
+      	// CAD Change END
     }
 
     void updateLatency()
@@ -1940,8 +1966,10 @@ private:
     AudioTimeStamp timeStamp;
     AudioBuffer<float> inputBuffer;
     Array<Array<AudioChannelSet>> supportedInLayouts, supportedOutLayouts;
+	// CAD Change START
     Array<AudioChannelLayoutTag> supportedInLayoutTags, supportedOutLayoutTags;
-  
+  	// CAD Change END
+	
     int numChannelInfos, preparedChannels = 0, preparedSamples = 0;
     HeapBlock<AUChannelInfo> channelInfos;
 
@@ -2182,6 +2210,7 @@ private:
         if (info.unit == kAudioUnitParameterUnit_Hertz)         return "Hz";
         if (info.unit == kAudioUnitParameterUnit_Decibels)      return "dB";
         if (info.unit == kAudioUnitParameterUnit_Milliseconds)  return "ms";
+		// CAD Change START
         if (info.unit == kAudioUnitParameterUnit_EqualPowerCrossfade) return "%";
         if (info.unit == kAudioUnitParameterUnit_Boolean)             return "T/F";
         if (info.unit == kAudioUnitParameterUnit_Seconds)             return "Secs";
@@ -2204,7 +2233,7 @@ private:
         if (info.unit == kAudioUnitParameterUnit_Rate)                return "Rate";
         if (info.unit == kAudioUnitParameterUnit_Indexed)             return "Indexed";
         if (info.unit == kAudioUnitParameterUnit_CustomUnit)          return String::fromCFString(info.unitName);
-
+		// CAD Change END
         return {};
     }
 
@@ -2473,9 +2502,11 @@ private:
     {
         supportedInLayouts.clear();
         supportedOutLayouts.clear();
+		// CAD Change START
         supportedInLayoutTags.clear();
         supportedOutLayoutTags.clear();
-
+		// CAD Change END
+		
         numChannelInfos = 0;
         channelInfos.free();
 
@@ -2488,8 +2519,9 @@ private:
             for (int busIdx = 0; busIdx < n; ++busIdx)
             {
                 Array<AudioChannelSet> supported;
+				// CAD Change START
                 Array<AudioChannelLayoutTag> supportedTags;
-              
+              	// CAD Change END
                 AudioChannelSet currentLayout;
 
                 {
@@ -2527,8 +2559,10 @@ private:
                             for (int j = 0; j < static_cast<int> (numElements); ++j)
                             {
                                 const AudioChannelLayoutTag tag = layoutTags[j];
+								// CAD Change START
                                 (isInput ? supportedInLayoutTags : supportedOutLayoutTags).add (tag);
-
+								// CAD Change END
+								
                                 if (tag != kAudioChannelLayoutTag_UseChannelDescriptions)
                                 {
                                     AudioChannelLayout caLayout;
@@ -2562,6 +2596,7 @@ private:
                 if (AudioUnitGetProperty (audioUnit, kAudioUnitProperty_SupportedNumChannels, kAudioUnitScope_Global, 0, channelInfos.get(), &propertySize) != noErr)
                     numChannelInfos = 0;
               
+			  	// CAD Change START
                 // we have an issue where juce takes precedence with the channellayouttags, so if the plugin is a bit dodgy and doesn't fill this out correctly
                 // then juce might not have all the layouts supported
                 for(int nC = 0; nC < numChannelInfos; nC++)
@@ -2577,9 +2612,11 @@ private:
                     
                   }
                 }
+				// CAD Change END
             }
             else
             {
+				// CAD Change START
                 numChannelInfos = 0;
 
                 // DO NOT add this code back in without proper investigation
@@ -2587,6 +2624,7 @@ private:
 //                channelInfos.malloc (static_cast<size_t> (numChannelInfos));
 //                channelInfos.get()->inChannels  = -1;
 //                channelInfos.get()->outChannels = -1;
+				// CAD Change END
             }
         }
     }
@@ -2703,7 +2741,9 @@ public:
 
     void paint (Graphics& g) override
     {
+	  // CAD Change START
       g.fillAll (Colours::black);
+	  // CAD Change END
     }
 
     void resized() override

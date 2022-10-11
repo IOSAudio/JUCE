@@ -181,6 +181,7 @@ const AudioProcessorParameterGroup* AudioProcessorParameterGroup::getGroupForPar
     return nullptr;
 }
 
+// CAD Change START
 bool AudioProcessorParameterGroup::differentTo(const AudioProcessorParameterGroup &other) const
   {
     bool bResult = false;
@@ -204,6 +205,7 @@ bool AudioProcessorParameterGroup::differentTo(const AudioProcessorParameterGrou
     
     return bResult;
   }
+// CAD Change END
 
 //==============================================================================
 #if JUCE_UNIT_TESTS

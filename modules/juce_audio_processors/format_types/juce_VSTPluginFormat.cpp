@@ -847,7 +847,9 @@ struct VSTPluginInstance final   : public AudioPluginInstance,
                       bool isBoolSwitch,
                       const StringArray& paramValueStrings,
                       const VSTXMLInfo::ValueType* paramValueType,
+					  // CAD Change START
                       int paramIndex)
+					  // CAD Change END
             : pluginInstance (parent),
               name (paramName),
               shortNames (shortParamNames),
@@ -860,7 +862,9 @@ struct VSTPluginInstance final   : public AudioPluginInstance,
               vstValueStrings (paramValueStrings),
               valueType (paramValueType)
         {
+		  // CAD Change START
           setOrigParameterIndex(paramIndex);
+		  // CAD Change END
         }
 
         float getValue() const override
@@ -1013,7 +1017,9 @@ struct VSTPluginInstance final   : public AudioPluginInstance,
         setRateAndBufferSizeDetails (sampleRateToUse, blockSizeToUse);
     }
 
-    bool refreshParameterList() override
+    // CAD Change START
+	bool refreshParameterList() override
+	// CAD Change START
     {
         AudioProcessorParameterGroup newParameterTree;
 
@@ -1086,6 +1092,7 @@ struct VSTPluginInstance final   : public AudioPluginInstance,
                                                                        isBoolSwitch, parameterValueStrings, valueType, i));
         }
       
+	  	// CAD Change START
         if(newParameterTree.differentTo(getParameterTree()))
         {
         setHostedParameterTree (std::move (newParameterTree));
@@ -1093,6 +1100,7 @@ struct VSTPluginInstance final   : public AudioPluginInstance,
         }
         else
           return false;
+		// CAD Change START
     }
 
     ~VSTPluginInstance() override
@@ -1237,6 +1245,7 @@ struct VSTPluginInstance final   : public AudioPluginInstance,
 
         setRateAndBufferSizeDetails (initialSampleRate, initialBlockSize);
       
+	  	// CAD Change START
       // following code has already been done, multiple effOpens can crash some vsts
 //        dispatch (Vst2::effIdentify, 0, 0, nullptr, 0);
 //
@@ -1247,7 +1256,8 @@ struct VSTPluginInstance final   : public AudioPluginInstance,
 //            dispatch (Vst2::effSetBlockSize, 0, jmax (32, getBlockSize()), nullptr, 0);
 //
 //        dispatch (Vst2::effOpen, 0, 0, nullptr, 0);
-
+		// CAD Change START
+		
         setRateAndBufferSizeDetails (getSampleRate(), getBlockSize());
 
         if (getNumPrograms() > 1)
@@ -1782,11 +1792,13 @@ struct VSTPluginInstance final   : public AudioPluginInstance,
 
         auto set = (const fxSet*) data;
 
+		// CAD Change START
         // Don't check version
         // if ((! compareMagic (set->chunkMagic, "CcnK")) || fxbSwap (set->version) > fxbVersionNum)
         if (! compareMagic (set->chunkMagic, "CcnK"))
             return false;
-
+		// CAD Change END
+		
         if (compareMagic (set->fxMagic, "FxBk"))
         {
             // bank of programs
@@ -2021,7 +2033,8 @@ struct VSTPluginInstance final   : public AudioPluginInstance,
     std::unique_ptr<VSTPluginFormat::ExtraFunctions> extraFunctions;
     bool usesCocoaNSView = false;
 
-    bool isSynth() const override
+    // CAD Change START
+	bool isSynth() const override
     {
       return isSynthPlugin();
     }
@@ -2030,7 +2043,8 @@ struct VSTPluginInstance final   : public AudioPluginInstance,
     {
       return getUID();
     }
-
+	// CAD Change END
+	
 private:
     //==============================================================================
     struct VST2BypassParameter final : public Parameter

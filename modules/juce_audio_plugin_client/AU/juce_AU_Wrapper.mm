@@ -99,7 +99,9 @@ template <> struct ContainerDeletePolicy<const __CFString>   { static void destr
 // make sure the audio processor is initialized before the AUBase class
 struct AudioProcessorHolder
 {
+	// CAD Change START
     AudioProcessorHolder (bool initialiseGUI, AudioUnit component)
+	// CAD Change END
     {
         if (initialiseGUI)
         {
@@ -110,14 +112,16 @@ struct AudioProcessorHolder
             initialiseJuce_GUI();
         }
 
+		// CAD Change START
         AudioComponentDescription *pDescription = new AudioComponentDescription;
         AudioComponentGetDescription((AudioComponent)component, pDescription);
+		// CAD Change END
         juceFilter.reset (createPluginFilterOfType (AudioProcessor::wrapperType_AudioUnit, pDescription));
 
         // audio units do not have a notion of enabled or un-enabled buses
         juceFilter->enableAllBuses();
     }
-
+	
     std::unique_ptr<AudioProcessor> juceFilter;
 };
 
@@ -130,7 +134,9 @@ class JuceAU   : public AudioProcessorHolder,
 {
 public:
     JuceAU (AudioUnit component)
+		// CAD Change START
         : AudioProcessorHolder (activePlugins.size() + activeUIs.size() == 0, component),
+		// CAD Change END
           MusicDeviceBase (component,
                            (UInt32) AudioUnitHelpers::getBusCountForWrapper (*juceFilter, true),
                            (UInt32) AudioUnitHelpers::getBusCountForWrapper (*juceFilter, false))
@@ -297,7 +303,9 @@ public:
        #if JucePlugin_IsMidiEffect
         return false;
        #elif JucePlugin_IsSynth
+	    // CAD Change START
         //if (isInput) return false; // you what!!
+		// CAD Change END
        #endif
 
         const int busCount = AudioUnitHelpers::getBusCount (*juceFilter, isInput);
@@ -342,8 +350,9 @@ public:
                     {
                         if (! juceFilter->addBus (isInput))
                             break;
-
+						// CAD Change START
                         err = syncAudioUnitWithChannelSet (isInput, busNr + 1,
+						// CAD Change END
                                                            juceFilter->getBus (isInput, busNr + 1)->getDefaultLayout());
                         if (err != noErr)
                             break;
@@ -393,19 +402,7 @@ public:
 
   UInt32 SupportedNumChannels (const AUChannelInfo** outInfo) override
   {
-//      // ARCFATAL ARCCHANNELS
-//      if (outInfo != nullptr)
-//      {
-//        AUChannelInfo *pChannelInfo = new AUChannelInfo();
-//        pChannelInfo->inChannels = -16;
-//        pChannelInfo->outChannels = -16;
-//
-//        *outInfo = pChannelInfo;
-//      }
-//
-//      return(1);
-//    
-//    // ARCFATALNOW
+	// CAD Change START
     static Array<AUChannelInfo> auChannelInfo;
     if(auto supportedChannels = juceFilter->getSupportedChannelInfo())
     {
@@ -433,6 +430,7 @@ public:
 
       return (UInt32) channelInfo.size();
     }
+	// CAD Change END
   }
   
     //==============================================================================
@@ -520,6 +518,7 @@ public:
                     {
                         if (juceFilter != nullptr)
                         {
+							// CAD Change START
                             String name;
                           
                             auto clumpIndex = clumpNameInfo->inID - 1;
@@ -550,7 +549,8 @@ public:
                                 else
                                     name = "";
                             }
-                            clumpNameInfo->outName = name.toCFString();
+    						// CAD Change END
+	                        clumpNameInfo->outName = name.toCFString();
                             return noErr;
                         }
                     }
@@ -648,7 +648,7 @@ public:
                                 const float value = (float) *(pv->inValue);
                                 String text;
 
-
+								// CAD Change START
                                 // Fix to get correct text values back to host
                                 // ARCTODO fix Juce properly to add this functionality
                                 if(value == param->getValue())
@@ -662,6 +662,7 @@ public:
                                     else
                                       text = param->getText (value / getMaximumParameterValue (param), 0);
                                 }
+								// CAD Change END
                                 pv->outString = text.toCFString();
 
                                 return noErr;
@@ -841,8 +842,10 @@ public:
     //==============================================================================
     bool busIgnoresLayout (bool isInput, int busNr) const
     {
-    //ARCFATAL ARCCHANNELS
-    return false;
+		// CAD Change START
+	    //ARCFATAL ARCCHANNELS
+	    //return false;
+		// CAD Change START
        #ifdef JucePlugin_PreferredChannelConfigurations
         ignoreUnused (isInput, busNr);
 
@@ -900,7 +903,8 @@ public:
 
         if (busIgnoresLayout (info.isInput, info.busNr))
             return 0;
-	
+			
+		// CAD Change START
         if(std::unique_ptr<juce::Array<uint32_t>> tags = juceFilter->getSupportedChannelTags(info.isInput))
         {
             if (outLayoutTags != nullptr)
@@ -921,6 +925,7 @@ public:
 
             return (UInt32) layouts.size();
         }
+		// CAD Change END
     }
   
     OSStatus SetAudioChannelLayout (AudioUnitScope scope, AudioUnitElement element, const AudioChannelLayout* inLayout) override
@@ -987,10 +992,11 @@ public:
             if (auto* param = getParameterForAUParameterID (inParameterID))
             {
                 outParameterInfo.unit = kAudioUnitParameterUnit_Generic;
+				// CAD Change START
                 outParameterInfo.flags = (UInt32) (   kAudioUnitParameterFlag_IsReadable
                                                     | kAudioUnitParameterFlag_HasCFNameString
                                                     | kAudioUnitParameterFlag_ValuesHaveStrings);
-
+				// CAD Change END
                #if ! JUCE_FORCE_LEGACY_PARAMETER_AUTOMATION_TYPE
                 outParameterInfo.flags |= (UInt32) kAudioUnitParameterFlag_IsHighResolution;
                #endif
@@ -1001,10 +1007,12 @@ public:
                 if (name.isEmpty() || ! param->isAutomatable())
                     outParameterInfo.flags |= kAudioUnitParameterFlag_NonRealTime;
 
+				// CAD Change START
                 // kAudioUnitParameterFlag_IsWritable is important for auval
                 if(param->isWritable())
                   outParameterInfo.flags |= kAudioUnitParameterFlag_IsWritable;
-
+			   	// CAD Change END
+				
                 const bool isParameterDiscrete = param->isDiscrete();
 
                 if (! isParameterDiscrete)
@@ -1020,12 +1028,14 @@ public:
                     outParameterInfo.flags |= kAudioUnitParameterFlag_HasClump;
                     outParameterInfo.clumpID = (UInt32) parameterGroups.indexOf (parameterGroupHierarchy.getLast()) + 1;
                 }
+				// CAD Change START
                 else if(param->getGroupId())
                 {
                   outParameterInfo.flags |= kAudioUnitParameterFlag_HasClump;
                   outParameterInfo.clumpID = param->getGroupId();
                 }
-
+				// CAD Change END
+				
                 // Is this a meter?
                 if ((((unsigned int) param->getCategory() & 0xffff0000) >> 16) == 2)
                 {
@@ -1048,10 +1058,12 @@ public:
                 outParameterInfo.maxValue = getMaximumParameterValue (param);
                 outParameterInfo.defaultValue = param->getDefaultValue() * getMaximumParameterValue (param);
               
-                // some plugins like giving - numbers here!
+			  	// CAD Change START
+                // some plugins like giving negative numbers here!
                 if(outParameterInfo.defaultValue < 0.0f)
                   outParameterInfo.defaultValue = 0.0f;
-              
+                // CAD Change END
+				
                 jassert (outParameterInfo.defaultValue >= outParameterInfo.minValue
                       && outParameterInfo.defaultValue <= outParameterInfo.maxValue);
 
@@ -1282,6 +1294,7 @@ public:
 
     void audioProcessorChanged (AudioProcessor*, const ChangeDetails& details) override
     {
+		// CAD Change START
         if(details.parameterInfoChanged)
         {
             paramMap.clear();
@@ -1299,6 +1312,7 @@ public:
                 Globals()->SetParameter (auParamID, param->getValue());
             }
         }
+		// CAD Change END
         audioProcessorChangedUpdater.update (details);
       
     }
@@ -2237,23 +2251,25 @@ private:
     AudioUnitParameterID generateAUParameterID (AudioProcessorParameter* param) const
     {
         const String& juceParamID = LegacyAudioParameter::getParamID (param, forceUseLegacyParamIDs);
-    // If we are an int just return
-    if(juceParamID.containsOnly("0123456789"))
-    {
-      return static_cast<AudioUnitParameterID> (juceParamID.getIntValue());
-    }
-    else
-    {
-        AudioUnitParameterID paramHash = static_cast<AudioUnitParameterID> (juceParamID.hashCode());
+		// CAD Change START
+	    // If we are an int just return
+	    if(juceParamID.containsOnly("0123456789"))
+	    {
+		      return static_cast<AudioUnitParameterID> (juceParamID.getIntValue());
+	    }
+	    else
+	    {
+	        AudioUnitParameterID paramHash = static_cast<AudioUnitParameterID> (juceParamID.hashCode());
 
-       #if JUCE_USE_STUDIO_ONE_COMPATIBLE_PARAMETERS
-        // studio one doesn't like negative parameters
-        paramHash &= ~(((AudioUnitParameterID) 1) << (sizeof (AudioUnitParameterID) * 8 - 1));
-       #endif
+	       #if JUCE_USE_STUDIO_ONE_COMPATIBLE_PARAMETERS
+	        // studio one doesn't like negative parameters
+	        paramHash &= ~(((AudioUnitParameterID) 1) << (sizeof (AudioUnitParameterID) * 8 - 1));
+	       #endif
 
-        return forceUseLegacyParamIDs ? static_cast<AudioUnitParameterID> (juceParamID.getIntValue())
-                                      : paramHash;
-    }
+	        return forceUseLegacyParamIDs ? static_cast<AudioUnitParameterID> (juceParamID.getIntValue())
+	                                      : paramHash;
+	    }
+		// CAD Change END
   }
   
     inline AudioUnitParameterID getAUParameterIDForIndex (int paramIndex) const noexcept
@@ -2397,30 +2413,32 @@ private:
     }
 
     //==============================================================================
-  Array<AudioChannelLayoutTag>&       getSupportedBusLayouts (bool isInput, int bus) noexcept
-  {
-    // original code fails if dynamic buses have been added
-    auto& layouts = isInput ? supportedInputLayouts : supportedOutputLayouts;
-    if(bus >= layouts.size())
-    {
-      Array<AudioChannelLayoutTag> busLayouts;
-      addSupportedLayoutTagsForBus (isInput, bus, busLayouts);
-      layouts.add(busLayouts);
-    }
-    return (layouts.getReference (bus));
-  }
-//  const Array<AudioChannelLayoutTag>& getSupportedBusLayouts (bool isInput, int bus) const noexcept
-//  {
-//    // original code fails if dynamic buses have been added
-//    auto& layouts = isInput ? supportedInputLayouts : supportedOutputLayouts;
-//    if(bus >= layouts.size())
-//    {
-//      Array<AudioChannelLayoutTag> busLayouts;
-//      addSupportedLayoutTagsForBus (isInput, bus, busLayouts);
-//      layouts.add(busLayouts);
-//    }
-//    return (isInput ? supportedInputLayouts : supportedOutputLayouts).getReference (bus);
-//  }
+	// CAD Change START	
+	Array<AudioChannelLayoutTag>&       getSupportedBusLayouts (bool isInput, int bus) noexcept
+	{
+	// original code fails if dynamic buses have been added
+	auto& layouts = isInput ? supportedInputLayouts : supportedOutputLayouts;
+	if(bus >= layouts.size())
+	{
+	  Array<AudioChannelLayoutTag> busLayouts;
+	  addSupportedLayoutTagsForBus (isInput, bus, busLayouts);
+	  layouts.add(busLayouts);
+	}
+	return (layouts.getReference (bus));
+	}
+	//  const Array<AudioChannelLayoutTag>& getSupportedBusLayouts (bool isInput, int bus) const noexcept
+	//  {
+	//    // original code fails if dynamic buses have been added
+	//    auto& layouts = isInput ? supportedInputLayouts : supportedOutputLayouts;
+	//    if(bus >= layouts.size())
+	//    {
+	//      Array<AudioChannelLayoutTag> busLayouts;
+	//      addSupportedLayoutTagsForBus (isInput, bus, busLayouts);
+	//      layouts.add(busLayouts);
+	//    }
+	//    return (isInput ? supportedInputLayouts : supportedOutputLayouts).getReference (bus);
+	//  }
+	// CAD Change END
     AudioChannelLayoutTag& getCurrentLayout (bool isInput, int bus) noexcept               { return (isInput ? currentInputLayout : currentOutputLayout).getReference (bus); }
     AudioChannelLayoutTag  getCurrentLayout (bool isInput, int bus) const noexcept         { return (isInput ? currentInputLayout : currentOutputLayout)[bus]; }
 

@@ -367,6 +367,7 @@ static void shutdownNSApp()
     [NSEvent startPeriodicEventsAfterDelay: 0  withPeriod: 0.1];
 }
 
+// CAD Change START
 void MessageManager::shutdownApp()
 {
     if (isThisTheMessageThread())
@@ -384,6 +385,7 @@ void MessageManager::shutdownApp()
         (new QuitCallback())->post();
     }
 }
+// CAD Change END
 
 void MessageManager::stopDispatchLoop()
 {

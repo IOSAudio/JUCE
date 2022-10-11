@@ -110,7 +110,9 @@ public:
         VBVSTScanner,               /**< Represents VB Audio VST Scanner. */
         ViennaEnsemblePro,          /**< Represents Vienna Ensemble Pro. */
         WaveBurner,                 /**< Represents Apple WaveBurner. */
+		// CAD Change START
         NIMaschine                  /**< Represents Native Instruments Maschine */
+		// CAD Change END
     };
 
     HostType type;
@@ -198,9 +200,11 @@ public:
     bool isWavelab() const noexcept           { return isWavelabLegacy() || type == SteinbergWavelab7 || type == SteinbergWavelab8 || type == SteinbergWavelabGeneric; }
     /** Returns true if the host is Steinberg WaveLab 6 or below. */
     bool isWavelabLegacy() const noexcept     { return type == SteinbergWavelab5 || type == SteinbergWavelab6; }
+	// CAD Change START
     /** Returns true if the host is Native INstruments Mashine. */
     bool isNIMaschine() const noexcept          { return type == NIMaschine; }
-
+	// CAD Change END
+	
     //==============================================================================
     /** Returns a human-readable description of the host. */
     const char* getHostDescription() const noexcept;
