@@ -4,13 +4,13 @@
 // Written and placed in the PUBLIC DOMAIN by PreSonus Software Ltd.
 //
 // Filename    : pslvst2extensions.h
-// Created by  : PreSonus Software Ltd., 05/2012, last updated 04/2019
+// Created by  : PreSonus Software Ltd., 05/2012, last updated 08/2017
 // Description : PreSonus-specific VST2 API Extensions
 //
 //************************************************************************************************
 /*
 	DISCLAIMER:
-	PreSonus Plug-In Extensions are host-specific extensions of existing proprietary technologies,
+	The PreSonus Plug-In Extensions are host-specific extensions of existing proprietary technologies,
 	provided to the community on an AS IS basis. They are not part of any official 3rd party SDK and
 	PreSonus is not affiliated with the owner of the underlying technology in any way.
 */
@@ -21,29 +21,11 @@
 
 namespace Presonus {
 
-/** @defgroup vst2Extensions VST 2 Extensions
-
-Vendor-specific opcodes a VST2 plug-in can implement to add non-standard features like
-embedding its views as subview into the host, resizing from the host, high-DPI scaling, etc.
-
-- Embedding corresponds to the Presonus::IPlugInViewEmbedding VST3 extended interface.
-
-- Resizing works like VST3's checkSizeConstraint() and onSize() methods, VST3's canResize()
-is defined via canDoViewResize.
-
-- For "DPI-aware" host applications on the Windows platform a similar mimic to the
-Presonus::IPlugInViewScaling VST3 extended interface is defined here.
-
-- Gain reduction reporting corresponds to the Presonus::IGainReductionInfo VST3 interface.
-
-- Slave effect handling corresponds to the Presonus::ISlaveControllerHandler VST3 interface.
-*/
-
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // CanDo Strings
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
-/** Identifiers to be passed to VST2's canDo() method. @ingroup vst2Extensions */
+/** Identifiers to be passed to VST2's canDo() method. */
 namespace PlugCanDos
 {
 	/** Check if view can be resized by the host. */
@@ -51,38 +33,43 @@ namespace PlugCanDos
 
 	/** Check if view can be embedded by the host. */
 	static const char* canDoViewEmbedding = "supportsViewEmbedding";
-
+	
 	/** Check if view scaling for high-DPI is supported by the plug-in. */
 	static const char* canDoViewDpiScaling = "supportsViewDpiScaling";
-
-	/** Check if system DPI scaling should be turned on for the plug-in. */
-	static const char* canDoViewSystemDpiScaling = "supportsViewSystemDpiScaling";
 
 	/** Check if gain reduction reporting is supported by the plug-in. */
 	static const char* canDoGainReductionInfo = "supportsGainReductionInfo";
 
 	/** Check if slave effects are supported by plug-in. */
 	static const char* canDoSlaveEffects = "supportsSlaveEffects";
-
-	/** Check if plug-in can export MIDI key switch information. */
-	static const char* canDoMidiKeySwitchInfo = "supportsMidiKeySwitchInfo";
-
-	/** Check if plug-in supports MPE notifications. */
-	static const char* canDoMPENotifications = "supportsMPENotifications";
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // Opcodes
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
-/** Opcodes @ingroup vst2Extensions */
+/** Vendor-specific opcodes a VST2 plug-in can implement to add non-standard features like 
+	embedding its views as subview into the host, resizing from the host, high-DPI scaling, etc.
+	
+	Embedding corresponds to the Presonus::IPlugInViewEmbedding VST3 extended interface.
+	
+	Resizing works like VST3's checkSizeConstraint() and onSize() methods, VST3's canResize()
+	is defined via canDoViewResize. 
+	
+	For "DPI-aware" host applications on the Windows platform a similar mimic to the
+	Presonus::IPlugInViewScaling VST3 extended interface is defined here.
+
+	Gain reduction reporting corresponds to the Presonus::IGainReductionInfo VST3 interface.
+
+	Slave effect handling corresponds to the Presonus::ISlaveControllerHandler VST3 interface.
+*/
 enum Opcodes
 {
 	/** PreSonus vendor ID - distinguishes our calls from other VST2 extensions.
 		Pass this vendor ID as "index" (aka "lArg1") parameter for vendor specific calls. */
 	kVendorID = 'PreS',
 
-	/** The host can suggest a new editor size, and the plug-in can modify the suggested
+	/** The host can suggest a new editor size, and the plug-in can modify the suggested 
 		size to a suitable value if it cannot resize to the given values.
 		The ptrArg is a ERect* to the input/output rect. This differs from the ERect**
 		used by effEditGetRect, because here the rect is owned by the host, not the plug-in.
@@ -101,7 +88,7 @@ enum Opcodes
 		The ptrArg is a VstInt32*, pointing to 0 to disable or to 1 to enable embedding.
 		Per default, embedding is disabled until the host calls this to indicate otherwise. */
 	kEffEditSetEmbedded = 'AeEm',
-
+	
 	/** Inform the view about the current content scaling factor. The factor is passed in the opt argument.
 		For more details, please check the documentation of Presonus::IPlugInViewScaling. */
 	kEffEditSetContentScaleFactor = 'AeCs',
@@ -116,23 +103,7 @@ enum Opcodes
 
 	/** Remove slave effect. The ptrArg is a pointer to the slave AEffect.
 		For more details, please check the documentation of Presonus::ISlaveControllerHandler. */
-	kEffRemoveSlave = 'RmSl',
-
-	/** Get MIDI key assignment. The ptrArg is a pointer to a MidiKeyName structure as defined in the VST2 SDK.
-		The opt argument is the MIDI channel. */
-	kEffGetMidiKeyAssignment = 'MKAs',
-
-	// flags used with MidiKeyName structure
-	kMidiKeyAssignmentIsKeySwitch = 1<<0,		///< key is used as key switch
-	kMidiKeyAssignmentIsActiveKeySwitch = 1<<1,	///< key switch is currently active
-	kMidiKeyAssignmentIsAssigned = 1<<2,		///< key is assigned (no sound otherwise)
-
-	/** Called by host to check if plug-in has MPE mode currently enabled (return value is 1). */
-	kEffGetMPEEnabled = 'gMPE',
-
-	/**	Notify host that plug-in has enabled or disabled MPE mode. Passed as 'value' argument to audioMasterVendorSpecific.
-		Host in turn queries new mode via kEffGetMPEEnabled and returns 1 on success or 0 if not called from main thread. */
-	kHostMPEEnabledChangeNotification = 'cMPE'
+	kEffRemoveSlave = 'RmSl'
 };
 
 } // namespace Presonus

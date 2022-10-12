@@ -10,7 +10,7 @@
 //************************************************************************************************
 /*
 	DISCLAIMER:
-	PreSonus Plug-In Extensions are host-specific extensions of existing proprietary technologies,
+	The PreSonus Plug-In Extensions are host-specific extensions of existing proprietary technologies,
 	provided to the community on an AS IS basis. They are not part of any official 3rd party SDK and
 	PreSonus is not affiliated with the owner of the underlying technology in any way.
 */
@@ -29,15 +29,13 @@ class IEditController; }}
 
 namespace Presonus {
 
-/** @defgroup editController Edit Controller Extensions */
-
-/** Parameter extra flags. Used with IEditControllerExtra. @ingroup editController */
+/** Parameter extra flags. Used with IEditControllerExtra. */
 enum ParamExtraFlags
 {
 	kParamFlagMicroEdit = 1<<0	///< parameter should be displayed in host micro view
 };
 
-/** Automation mode. Used with IEditControllerExtra. @ingroup editController */
+/** Automation mode. Used with IEditControllerExtra. */
 enum AutomationMode
 {
 	kAutomationNone = 0,	///< no automation data available
@@ -48,7 +46,7 @@ enum AutomationMode
 	kAutomationWrite		///< data + write mode
 };
 
-/** Slave mode. Used with ISlaveControllerHandler. @ingroup editController */
+/** Slave mode. Used with ISlaveControllerHandler. */
 enum SlaveMode
 {
 	kSlaveModeNormal,	         ///< plug-in used in different location following given master
@@ -58,9 +56,7 @@ enum SlaveMode
 //************************************************************************************************
 // IEditControllerExtra
 /**	Extension to Steinberg::Vst::IEditController with additonal flags and notifications
-	not available in the standard edit controller interface. 
-	
-	@ingroup editController	*/
+	not available in the standard edit controller interface. */
 //************************************************************************************************
 
 struct IEditControllerExtra: Steinberg::FUnknown
@@ -86,8 +82,7 @@ DECLARE_CLASS_IID (IEditControllerExtra, 0x50553fd9, 0x1d2c4c24, 0xb410f484, 0xc
 	at the same time even though it looks like one to the user, i.e. only the editor of the master
 	instance is visible and can be used to change parameters. The edit controller implementation has
 	to synchronize parameter changes between instances that aren't visible to the host internally. 
-
-	@ingroup editController	*/
+*/
 //************************************************************************************************
 
 struct ISlaveControllerHandler: Steinberg::FUnknown

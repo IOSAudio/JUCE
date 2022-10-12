@@ -2,15 +2,15 @@
   ==============================================================================
 
    This file is part of the JUCE library.
-   Copyright (c) 2020 - Raw Material Software Limited
+   Copyright (c) 2022 - Raw Material Software Limited
 
    JUCE is an open source library subject to commercial or open-source
    licensing.
 
-   By using JUCE, you agree to the terms of both the JUCE 6 End-User License
-   Agreement and JUCE Privacy Policy (both effective as of the 16th June 2020).
+   By using JUCE, you agree to the terms of both the JUCE 7 End-User License
+   Agreement and JUCE Privacy Policy.
 
-   End User License Agreement: www.juce.com/juce-6-licence
+   End User License Agreement: www.juce.com/juce-7-licence
    Privacy Policy: www.juce.com/juce-privacy-policy
 
    Or: You may also use this code under the terms of the GPL v3 (see
@@ -37,12 +37,6 @@
  #define JUCE_AUV3_MIDI_EVENT_LIST_SUPPORTED 1
 #endif
 
-#if (JUCE_IOS && defined (__IPHONE_11_0) && __IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_11_0) \
-   || (JUCE_MAC && defined (MAC_OS_X_VERSION_10_13) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_13)
- #define JUCE_AUV3_MIDI_OUTPUT_SUPPORTED 1
- #define JUCE_AUV3_VIEW_CONFIG_SUPPORTED 1
-#endif
-
 #ifndef __OBJC2__
  #error AUv3 needs Objective-C 2 support (compile with 64-bit)
 #endif
@@ -58,6 +52,7 @@
 
 #include <juce_graphics/native/juce_mac_CoreGraphicsHelpers.h>
 #include <juce_audio_basics/native/juce_mac_CoreAudioLayouts.h>
+#include <juce_audio_basics/native/juce_mac_CoreAudioTimeConversions.h>
 #include <juce_audio_processors/format_types/juce_LegacyAudioParameter.cpp>
 #include <juce_audio_processors/format_types/juce_AU_Shared.h>
 
@@ -139,7 +134,7 @@ public:
 
     //==============================================================================
     virtual AUAudioUnitPreset* getCurrentPreset()                          = 0;
-    virtual void setCurrentPreset(AUAudioUnitPreset*)                      = 0;
+    virtual void setCurrentPreset (AUAudioUnitPreset*)                     = 0;
     virtual NSArray<AUAudioUnitPreset*>* getFactoryPresets()               = 0;
 
     virtual NSDictionary<NSString*, id>* getFullState()
@@ -201,12 +196,11 @@ public:
     }
 
     //==============================================================================
-   #if JUCE_AUV3_VIEW_CONFIG_SUPPORTED
-    JUCE_BEGIN_IGNORE_WARNINGS_GCC_LIKE ("-Wunguarded-availability", "-Wunguarded-availability-new")
+    API_AVAILABLE (macos (10.13), ios (11.0))
     virtual NSIndexSet* getSupportedViewConfigurations (NSArray<AUAudioUnitViewConfiguration*>*) = 0;
+
+    API_AVAILABLE (macos (10.13), ios (11.0))
     virtual void selectViewConfiguration (AUAudioUnitViewConfiguration*) = 0;
-    JUCE_END_IGNORE_WARNINGS_GCC_LIKE
-   #endif
 
 private:
     struct Class  : public ObjCClass<AUAudioUnit>
@@ -252,10 +246,8 @@ private:
             addMethod (@selector (supportsMPE),                     getSupportsMPE);
             JUCE_END_IGNORE_WARNINGS_GCC_LIKE
 
-           #if JUCE_AUV3_MIDI_OUTPUT_SUPPORTED
             if (@available (macOS 10.13, iOS 11.0, *))
                 addMethod (@selector (MIDIOutputNames), getMIDIOutputNames);
-           #endif
 
             //==============================================================================
             addMethod (@selector (internalRenderBlock),             getInternalRenderBlock);
@@ -272,13 +264,11 @@ private:
             addMethod (@selector (setContextName:),                 setContextName);
 
             //==============================================================================
-           #if JUCE_AUV3_VIEW_CONFIG_SUPPORTED
             if (@available (macOS 10.13, iOS 11.0, *))
             {
                 addMethod (@selector (supportedViewConfigurations:),    getSupportedViewConfigurations);
                 addMethod (@selector (selectViewConfiguration:),        selectViewConfiguration);
             }
-           #endif
 
             registerClass();
         }
@@ -387,12 +377,11 @@ private:
         static void setContextName (id self, SEL, NSString* str)                                    { return _this (self)->setContextName (str); }
 
         //==============================================================================
-       #if JUCE_AUV3_VIEW_CONFIG_SUPPORTED
-        JUCE_BEGIN_IGNORE_WARNINGS_GCC_LIKE ("-Wunguarded-availability", "-Wunguarded-availability-new")
+        API_AVAILABLE (macos (10.13), ios (11.0))
         static NSIndexSet* getSupportedViewConfigurations (id self, SEL, NSArray<AUAudioUnitViewConfiguration*>* configs) { return _this (self)->getSupportedViewConfigurations (configs); }
+
+        API_AVAILABLE (macos (10.13), ios (11.0))
         static void selectViewConfiguration (id self, SEL, AUAudioUnitViewConfiguration* config)                          { _this (self)->selectViewConfiguration (config); }
-        JUCE_END_IGNORE_WARNINGS_GCC_LIKE
-       #endif
     };
 
     static JuceAudioUnitv3Base* create (AUAudioUnit*, AudioComponentDescription, AudioComponentInstantiationOptions, NSError**);
@@ -518,27 +507,18 @@ public:
     {
         midiMessages.clear();
         lastTimeStamp.mSampleTime = std::numeric_limits<Float64>::max();
+        lastTimeStamp.mFlags = 0;
     }
 
     //==============================================================================
     AUAudioUnitPreset* getCurrentPreset() override
     {
-        const int n = static_cast<int> ([factoryPresets.get() count]);
-        const int idx = static_cast<int> (getAudioProcessor().getCurrentProgram());
-
-        if (idx < n)
-            return [factoryPresets.get() objectAtIndex:static_cast<unsigned int> (idx)];
-
-        return nullptr;
+        return factoryPresets.getAtIndex (getAudioProcessor().getCurrentProgram());
     }
 
     void setCurrentPreset (AUAudioUnitPreset* preset) override
     {
-        const int n = static_cast<int> ([factoryPresets.get() count]);
-        const int idx = static_cast<int> ([preset number]);
-
-        if (isPositiveAndBelow (idx, n))
-            getAudioProcessor().setCurrentProgram (idx);
+        getAudioProcessor().setCurrentProgram (static_cast<int> ([preset number]));
     }
 
     NSArray<AUAudioUnitPreset*>* getFactoryPresets() override
@@ -861,7 +841,6 @@ public:
         midiMessages.ensureSize (2048);
         midiMessages.clear();
 
-        zeromem (&lastAudioHead, sizeof (lastAudioHead));
         hostMusicalContextCallback = [getAudioUnit() musicalContextBlock];
         hostTransportStateCallback = [getAudioUnit() transportStateBlock];
 
@@ -892,8 +871,7 @@ public:
     }
 
     //==============================================================================
-   #if JUCE_AUV3_VIEW_CONFIG_SUPPORTED
-    JUCE_BEGIN_IGNORE_WARNINGS_GCC_LIKE ("-Wunguarded-availability", "-Wunguarded-availability-new")
+    API_AVAILABLE (macos (10.13), ios (11.0))
     NSIndexSet* getSupportedViewConfigurations (NSArray<AUAudioUnitViewConfiguration*>* configs) override
     {
         auto supportedViewIndecies = [[NSMutableIndexSet alloc] init];
@@ -926,12 +904,11 @@ public:
         return [supportedViewIndecies autorelease];
     }
 
+    API_AVAILABLE (macos (10.13), ios (11.0))
     void selectViewConfiguration (AUAudioUnitViewConfiguration* config) override
     {
         processorHolder->viewConfiguration.reset (new AudioProcessorHolder::ViewConfig { [config width], [config height], [config hostHasController] == YES });
     }
-    JUCE_END_IGNORE_WARNINGS_GCC_LIKE
-   #endif
 
     struct ScopedKeyChange
     {
@@ -982,7 +959,7 @@ public:
             {
                 const auto value = (newValue != nullptr ? *newValue : juceParam->getValue()) * getMaximumParameterValue (juceParam);
 
-                if (@available (macOS 10.12, *))
+                if (@available (macOS 10.12, iOS 10.0, *))
                 {
                     [param setValue: value
                          originator: editorObserverToken
@@ -1013,16 +990,13 @@ public:
     }
 
     //==============================================================================
-    bool getCurrentPosition (CurrentPositionInfo& info) override
+    Optional<PositionInfo> getPosition() const override
     {
-        bool musicContextCallSucceeded = false;
-        bool transportStateCallSucceeded = false;
+        PositionInfo info;
+        info.setTimeInSamples ((int64) (lastTimeStamp.mSampleTime + 0.5));
+        info.setTimeInSeconds (*info.getTimeInSamples() / getAudioProcessor().getSampleRate());
 
-        info = lastAudioHead;
-        info.timeInSamples = (int64) (lastTimeStamp.mSampleTime + 0.5);
-        info.timeInSeconds = info.timeInSamples / getAudioProcessor().getSampleRate();
-
-        info.frameRate = [this]
+        info.setFrameRate ([this]
         {
             switch (lastTimeStamp.mSMPTETime.mType)
             {
@@ -1042,7 +1016,7 @@ public:
             }
 
             return FrameRate();
-        }();
+        }());
 
         double num;
         NSInteger den;
@@ -1056,17 +1030,14 @@ public:
 
             if (musicalContextCallback (&bpm, &num, &den, &ppqPosition, &outDeltaSampleOffsetToNextBeat, &outCurrentMeasureDownBeat))
             {
-                musicContextCallSucceeded = true;
-
-                info.timeSigNumerator   = (int) num;
-                info.timeSigDenominator = (int) den;
-                info.ppqPositionOfLastBarStart = outCurrentMeasureDownBeat;
-                info.bpm = bpm;
-                info.ppqPosition = ppqPosition;
+                info.setTimeSignature (TimeSignature { (int) num, (int) den });
+                info.setPpqPositionOfLastBarStart (outCurrentMeasureDownBeat);
+                info.setBpm (bpm);
+                info.setPpqPosition (ppqPosition);
             }
         }
 
-        double outCurrentSampleInTimeLine, outCycleStartBeat = 0, outCycleEndBeat = 0;
+        double outCurrentSampleInTimeLine = 0, outCycleStartBeat = 0, outCycleEndBeat = 0;
         AUHostTransportStateFlags flags;
 
         if (hostTransportStateCallback != nullptr)
@@ -1075,22 +1046,19 @@ public:
 
             if (transportStateCallback (&flags, &outCurrentSampleInTimeLine, &outCycleStartBeat, &outCycleEndBeat))
             {
-                transportStateCallSucceeded = true;
-
-                info.timeInSamples  = (int64) (outCurrentSampleInTimeLine + 0.5);
-                info.timeInSeconds  = info.timeInSamples / getAudioProcessor().getSampleRate();
-                info.isPlaying      = ((flags & AUHostTransportStateMoving) != 0);
-                info.isLooping      = ((flags & AUHostTransportStateCycling) != 0);
-                info.isRecording    = ((flags & AUHostTransportStateRecording) != 0);
-                info.ppqLoopStart   = outCycleStartBeat;
-                info.ppqLoopEnd     = outCycleEndBeat;
+                info.setTimeInSamples  ((int64) (outCurrentSampleInTimeLine + 0.5));
+                info.setTimeInSeconds  (*info.getTimeInSamples() / getAudioProcessor().getSampleRate());
+                info.setIsPlaying      ((flags & AUHostTransportStateMoving) != 0);
+                info.setIsLooping      ((flags & AUHostTransportStateCycling) != 0);
+                info.setIsRecording    ((flags & AUHostTransportStateRecording) != 0);
+                info.setLoopPoints     (LoopPoints { outCycleStartBeat, outCycleEndBeat });
             }
         }
 
-        if (musicContextCallSucceeded && transportStateCallSucceeded)
-            lastAudioHead = info;
+        if ((lastTimeStamp.mFlags & kAudioTimeStampHostTimeValid) != 0)
+            info.setHostTimeNs (timeConversions.hostTimeToNanos (lastTimeStamp.mHostTime));
 
-        return true;
+        return info;
     }
 
     //==============================================================================
@@ -1189,6 +1157,38 @@ private:
         int maxFrames, numberOfChannels;
         bool isInterleaved;
         juce::AudioBuffer<float> scratchBuffer;
+    };
+
+    class FactoryPresets
+    {
+    public:
+        using Presets = std::unique_ptr<NSMutableArray<AUAudioUnitPreset*>, NSObjectDeleter>;
+
+        void set (Presets newPresets)
+        {
+            std::lock_guard<std::mutex> lock (mutex);
+            std::swap (presets, newPresets);
+        }
+
+        NSArray* get() const
+        {
+            std::lock_guard<std::mutex> lock (mutex);
+            return presets.get();
+        }
+
+        AUAudioUnitPreset* getAtIndex (int index) const
+        {
+            std::lock_guard<std::mutex> lock (mutex);
+
+            if (index < (int) [presets.get() count])
+                return [presets.get() objectAtIndex: (unsigned int) index];
+
+            return nullptr;
+        }
+
+    private:
+        Presets presets;
+        mutable std::mutex mutex;
     };
 
     //==============================================================================
@@ -1434,7 +1434,7 @@ private:
 
     void addPresets()
     {
-        factoryPresets.reset ([[NSMutableArray<AUAudioUnitPreset*> alloc] init]);
+        FactoryPresets::Presets newPresets { [[NSMutableArray<AUAudioUnitPreset*> alloc] init] };
 
         const int n = getAudioProcessor().getNumPrograms();
 
@@ -1446,8 +1446,10 @@ private:
             [preset.get() setName: juceStringToNS (name)];
             [preset.get() setNumber: static_cast<NSInteger> (idx)];
 
-            [factoryPresets.get() addObject: preset.get()];
+            [newPresets.get() addObject: preset.get()];
         }
+
+        factoryPresets.set (std::move (newPresets));
     }
 
     //==============================================================================
@@ -1624,7 +1626,7 @@ private:
             processBlock (audioBuffer.getBuffer (frameCount), midiMessages);
 
             // send MIDI
-           #if JucePlugin_ProducesMidiOutput && JUCE_AUV3_MIDI_OUTPUT_SUPPORTED
+           #if JucePlugin_ProducesMidiOutput
             if (@available (macOS 10.13, iOS 11.0, *))
             {
                 if (auto midiOut = midiOutputEventBlock)
@@ -1771,6 +1773,7 @@ private:
 
     int totalInChannels, totalOutChannels;
 
+    CoreAudioTimeConversions timeConversions;
     std::unique_ptr<AUAudioUnitBusArray, NSObjectDeleter> inputBusses, outputBusses;
 
     ObjCBlock<AUImplementorValueObserver> paramObserver;
@@ -1792,7 +1795,7 @@ private:
     std::unique_ptr<AUParameterTree, NSObjectDeleter> paramTree;
     std::unique_ptr<NSMutableArray<NSNumber*>, NSObjectDeleter> overviewParams, channelCapabilities;
 
-    std::unique_ptr<NSMutableArray<AUAudioUnitPreset*>, NSObjectDeleter> factoryPresets;
+    FactoryPresets factoryPresets;
 
     ObjCBlock<AUInternalRenderBlock> internalRenderBlock;
 
@@ -1811,7 +1814,6 @@ private:
     ObjCBlock<AUHostTransportStateBlock> hostTransportStateCallback;
 
     AudioTimeStamp lastTimeStamp;
-    CurrentPositionInfo lastAudioHead;
 
     String contextName;
 
@@ -2053,9 +2055,13 @@ private:
 
 //==============================================================================
 #if JUCE_IOS
+JUCE_BEGIN_IGNORE_WARNINGS_GCC_LIKE ("-Wmissing-prototypes")
+
 bool JUCE_CALLTYPE juce_isInterAppAudioConnected() { return false; }
 void JUCE_CALLTYPE juce_switchToHostApplication()  {}
 Image JUCE_CALLTYPE juce_getIAAHostIcon (int)      { return {}; }
+
+JUCE_END_IGNORE_WARNINGS_GCC_LIKE
 #endif
 
 JUCE_END_IGNORE_WARNINGS_GCC_LIKE
