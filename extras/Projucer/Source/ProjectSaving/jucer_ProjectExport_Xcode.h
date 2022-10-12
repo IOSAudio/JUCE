@@ -1312,7 +1312,9 @@ public:
             if (developmentTeamID.isNotEmpty())
             {
                 attributes.add ("DevelopmentTeam = " + developmentTeamID);
+				// CAD Change START
                 attributes.add ("ProvisioningStyle = Manual");
+				// CAD Change END
             }
 
             std::map<String, bool> capabilities;
@@ -2552,8 +2554,10 @@ private:
 
         if (config.isDebug())
         {
+			// CAD Change START
             if (config.getMacOSArchitectureString() == macOSArch_Default)
                 s.set ("ONLY_ACTIVE_ARCH", "NO");
+			// CAD Change END
         }
 
         s.set (iOS ? "\"CODE_SIGN_IDENTITY[sdk=iphoneos*]\"" : "CODE_SIGN_IDENTITY",
@@ -3196,9 +3200,11 @@ private:
 
     String addCustomFramework (String frameworkPath) const
     {
+		// CAD Change START
         if (! frameworkPath.endsWithIgnoreCase (".framework") && ! frameworkPath.endsWithIgnoreCase (".a"))
             frameworkPath << ".framework";
-
+		// CAD Change END
+		
         auto fileRefID = createFileRefID (frameworkPath);
 
         auto fileType = getFileType (frameworkPath);
@@ -3399,7 +3405,8 @@ private:
 
         attributes["LastUpgradeCheck"] = "1320";
         attributes["ORGANIZATIONNAME"] = getProject().getCompanyNameString().quoted();
-
+		
+		// CAD Change START
         if (projectType.isGUIApplication() || projectType.isAudioPlugin() || projectType.isCommandLineApp())
         {
             StringArray targetAttributes;
@@ -3409,7 +3416,8 @@ private:
 
             attributes["TargetAttributes"] = indentBracedList (targetAttributes, 1);
         }
-
+		// CAD Change END
+		
         StringArray result;
 
         for (const auto& attrib : attributes)
