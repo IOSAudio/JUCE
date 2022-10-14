@@ -1331,15 +1331,14 @@ public:
             auParamIDs.clear();
             for (auto* param : juceParameters)  // todo we need code like this block when we change plugins, or to bypass auParamIDs and paramMap
             {
-                const AudioUnitParameterID auParamID = generateAUParameterID (param);
+                const AudioUnitParameterID auParamID = generateAUParameterID (*param);
 
-                // Consider yourself very unlucky if you hit this assertion. The hash codes of your
-                // parameter ids are not unique.
-                jassert (! paramMap.contains (static_cast<int32> (auParamID)));
+                jassert (paramMap.find (static_cast<int32> (auParamID)) == paramMap.end());
 
                 auParamIDs.add (auParamID);
-                paramMap.set (static_cast<int32> (auParamID), param);
+                paramMap.emplace (static_cast<int32> (auParamID), param);
                 Globals()->SetParameter (auParamID, param->getValue());
+
             }
         }
 		// CAD Change END
