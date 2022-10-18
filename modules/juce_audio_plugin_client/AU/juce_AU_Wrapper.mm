@@ -660,7 +660,7 @@ public:
                                       text = juceFilter->getParameterTextForValue ((int) pv->inParamID, value / getMaximumParameterValue (param), 1024);
                                     }
                                     else
-                                      text = param->getText (value / getMaximumParameterValue (param), 0);
+                                      text = param->getText (value / getMaximumParameterValue (param), 1024);
                                 }
 								// CAD Change END
                                 pv->outString = text.toCFString();
