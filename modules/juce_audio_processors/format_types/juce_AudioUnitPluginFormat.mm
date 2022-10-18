@@ -569,6 +569,80 @@ public:
 			// CAD Change END
         }
 
+        // CAD Change start
+        void updateFromInfo(const AudioUnitParameterInfo &info)
+        {
+          name = getParamName (info);
+          valueLabel = getParamLabel (info);
+          
+          minValue = info.minValue;
+          maxValue = info.maxValue;
+          defaultValue = normaliseParamValue(info.defaultValue);
+          range = (maxValue - minValue);
+          
+          isMeta = info.flags & kAudioUnitParameterFlag_IsGlobalMeta;
+          writable = info.flags & kAudioUnitParameterFlag_IsWritable;
+
+          bool realtime = (info.flags & kAudioUnitParameterFlag_NonRealTime) == 0;
+          automatable = writable && realtime;
+          
+          discrete = (info.unit == kAudioUnitParameterUnit_Indexed || info.unit == kAudioUnitParameterUnit_Boolean);
+          isSwitch = info.unit == kAudioUnitParameterUnit_Boolean;
+          
+          numSteps = discrete ? (int) (info.maxValue - info.minValue + 1.0f) : 0x7fffffff;
+          valuesHaveStrings = (info.flags & kAudioUnitParameterFlag_ValuesHaveStrings) != 0;
+          
+          // Parameter::getAllValueStrings() doesn't work for audio units that implement kAudioUnitProperty_ParameterValueStrings and not kAudioUnitProperty_ParameterStringFromValue
+          if(discrete)
+          {
+            CFArrayRef cfaNamedParams;
+    
+            UInt32   uPropertySize = sizeof(cfaNamedParams);
+            OSStatus err = AudioUnitGetProperty (pluginInstance.audioUnit, kAudioUnitProperty_ParameterValueStrings, kAudioUnitScope_Global, paramID, &cfaNamedParams, &uPropertySize);
+    
+            if (!err && cfaNamedParams)
+            {
+              numSteps = static_cast<int>(CFArrayGetCount(cfaNamedParams));
+    
+              for(CFIndex uPvs = 0; uPvs < numSteps; uPvs++)
+              {
+                CFStringRef cfRef = (CFStringRef)CFArrayGetValueAtIndex(cfaNamedParams, uPvs);
+                auValueStrings.add(juce::String::fromCFString(cfRef));
+              }
+    
+              CFRelease(cfaNamedParams);
+            }
+            
+            if(auValueStrings.size() == 0)
+            {
+              if(!valuesHaveStrings)
+              {
+                // Parameter::getAllValueStrings() doesn't work for audio units that dont implement kAudioUnitProperty_ParameterValueStrings and have a min value of non 0
+                numSteps = (int)(maxValue+1 - minValue);
+                for(int nIndex = 0; nIndex < numSteps; nIndex++)
+                {
+                  float fValue = minValue + nIndex;
+                  
+                  char buffer[128];
+                  
+                  if((int)fValue == fValue)
+                    sprintf(buffer, "%d", (int)(fValue));
+                  else
+                    sprintf(buffer, "%.2f", fValue);
+                  
+                  auValueStrings.add(buffer);
+                }
+              }
+              else
+              {
+                // otherwise run existing code
+                auValueStrings = Parameter::getAllValueStrings();
+              }
+            }
+          }
+        }
+        // CAD Change END
+      
         float getValue() const override
         {
             const ScopedLock sl (pluginInstance.lock);
@@ -782,19 +856,17 @@ public:
         AudioUnitPluginInstance& pluginInstance;
         const UInt32 paramID;
         String name;
-        const AudioUnitParameterValue minValue, maxValue, range;
+        AudioUnitParameterValue minValue, maxValue, range;
 		// CAD Change START
         bool automatable;
-        const bool writable, discrete;
-		// CAD Change END
+        bool writable, discrete;
         int numSteps;
-        const bool valuesHaveStrings, isSwitch;
-		// CAD Change START
-        const bool isMeta;
-		// CAD Change END
+        bool valuesHaveStrings, isSwitch;
+        bool isMeta;
         String valueLabel;
-        const AudioUnitParameterValue defaultValue;
+        AudioUnitParameterValue defaultValue;
         StringArray auValueStrings;
+      // CAD Change END
     };
 
     AudioUnitPluginInstance (AudioComponentInstance au)
@@ -2152,16 +2224,12 @@ private:
 
             if (! info.isValid())
                 continue;
-
-            param->setName  (getParamName  (info.get()));
-            param->setLabel (getParamLabel (info.get()));
           
             // CAD Change START
-            bool isWritable    = info.get().flags & kAudioUnitParameterFlag_IsWritable;
-            bool isRealTime = (info.get().flags & kAudioUnitParameterFlag_NonRealTime) == 0;
-
-            printf("***AUTOMATABLE[%u](%s) %u, %u, %u\n", id, param->getName(256).toRawUTF8(), isWritable, isRealTime, isWritable && isRealTime);
-            param->setAutomatable(isWritable && isRealTime);
+            param->setName  (getParamName  (info.get()));
+            param->setLabel (getParamLabel (info.get()));
+            
+            param->updateFromInfo(info.get());
             // CAD Change END
         }
     }
