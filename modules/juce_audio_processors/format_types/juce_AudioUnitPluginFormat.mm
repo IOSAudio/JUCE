@@ -500,7 +500,7 @@ public:
               minValue (minParameterValue),
               maxValue (maxParameterValue),
               range (maxValue - minValue),
-              automatable (parameterIsAutomatable),
+              automatable (isWritable && parameterIsAutomatable), // juce parameterIsAutomatable is incorrect, basically should be realTime.
 			  // CAD Change START
               writable(isWritable),
 			  // CAD Change END
@@ -677,15 +677,22 @@ public:
         }
 
         // CAD Change START
-		bool isWritable() const override            { return writable; }
+        bool isWritable() const override            { return writable; }
         // CAD Change END
-		bool isAutomatable() const override         { return automatable; }
+        bool isAutomatable() const override         { return automatable; }
         bool isDiscrete() const override            { return discrete; }
         bool isBoolean() const override             { return isSwitch; }
         // CAD Change START
-		bool isMetaParameter() const  override      { return isMeta; }
+        bool isMetaParameter() const  override      { return isMeta; }
         // CAD Change END
-		int getNumSteps() const override            { return numSteps; }
+        int getNumSteps() const override            { return numSteps; }
+
+        // CAD Change START
+        void setAutomatable(bool isAutomatable)
+        {
+          automatable = isAutomatable;
+        }
+        // CAD Change END
 
         StringArray getAllValueStrings() const override
         {
@@ -777,7 +784,8 @@ public:
         String name;
         const AudioUnitParameterValue minValue, maxValue, range;
 		// CAD Change START
-        const bool automatable, writable, discrete;
+        bool automatable;
+        const bool writable, discrete;
 		// CAD Change END
         int numSteps;
         const bool valuesHaveStrings, isSwitch;
@@ -2147,6 +2155,14 @@ private:
 
             param->setName  (getParamName  (info.get()));
             param->setLabel (getParamLabel (info.get()));
+          
+            // CAD Change START
+            bool isWritable    = info.get().flags & kAudioUnitParameterFlag_IsWritable;
+            bool isRealTime = (info.get().flags & kAudioUnitParameterFlag_NonRealTime) == 0;
+
+            printf("***AUTOMATABLE[%u](%s) %u, %u, %u\n", id, param->getName(256).toRawUTF8(), isWritable, isRealTime, isWritable && isRealTime);
+            param->setAutomatable(isWritable && isRealTime);
+            // CAD Change END
         }
     }
    #endif
