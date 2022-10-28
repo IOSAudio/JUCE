@@ -744,7 +744,6 @@ public:
     { \
         addRef(); \
         *obj = dynamic_cast<ClassType*> (this); \
-printf("YIPEEEE\n"); \
         return Steinberg::kResultOk; \
     }
 	// CAD Change END
