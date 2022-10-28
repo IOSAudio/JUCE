@@ -2315,7 +2315,7 @@ private:
         if (info.unit == kAudioUnitParameterUnit_Beats)               return "Beats";
         if (info.unit == kAudioUnitParameterUnit_Ratio)               return "Ratio";
         if (info.unit == kAudioUnitParameterUnit_Rate)                return "Rate";
-        if (info.unit == kAudioUnitParameterUnit_Indexed)             return "Indexed";
+        if (info.unit == kAudioUnitParameterUnit_Indexed)             return "";
         if (info.unit == kAudioUnitParameterUnit_CustomUnit)          return String::fromCFString(info.unitName);
 		// CAD Change END
         return {};
