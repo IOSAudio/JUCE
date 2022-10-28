@@ -886,6 +886,7 @@ void AudioProcessor::audioIOChanged (bool busNumberChanged, bool channelNumChang
     cachedTotalIns  = countTotalChannels (inputBuses);
     cachedTotalOuts = countTotalChannels (outputBuses);
 
+    printf("CACHED CHANNELS(%p) (%d, %d)\n",this, cachedTotalIns, cachedTotalOuts);
     updateSpeakerFormatStrings();
 
     if (busNumberChanged)
