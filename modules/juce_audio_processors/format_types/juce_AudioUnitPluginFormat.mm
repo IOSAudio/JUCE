@@ -1030,17 +1030,21 @@ public:
                   return false;
               
 			  	// CAD Change START
-#define CHANNELS_ONLY
-#ifndef CHANNELS_ONLY
+#define CAD_USE_LAYOUTS
+#ifdef CAD_USE_LAYOUTS
                 // ARCCHANNELS
                 // Some plugins use defined layouts and also channelLayouts, so may support (0,-32) but do not supply full channelInfos
-                // defineing CHANNELS_ONLY will use the channelInfo only and not just base it on the layouts
 
-                auto& supported = (isInput ? supportedInLayouts : supportedOutLayouts);
-                auto& possible  = supported.getReference (busIdx);
-              
-                if (possible.size() > 0 && ! possible.contains (requested))
-                    return false;
+                bool bHasLayouts = (isInput ? supportedInLayouts : supportedOutLayouts).size();
+                bool bHasSingleNegativeChannelInfo = (numChannelInfos == 1) && ((isInput ? channelInfos[0].inChannels : channelInfos[0].outChannels) < 0);
+                if(bHasLayouts && bHasSingleNegativeChannelInfo)
+                {
+                  auto& supported = (isInput ? supportedInLayouts : supportedOutLayouts);
+                  auto& possible  = supported.getReference (busIdx);
+                
+                  if (possible.size() > 0 && ! possible.contains (requested))
+                      return false;
+                }
 #endif
               	// CAD Change END
 				
@@ -2603,7 +2607,7 @@ private:
             for (int busIdx = 0; busIdx < n; ++busIdx)
             {
                 Array<AudioChannelSet> supported;
-				// CAD Change START
+                // CAD Change START
                 Array<AudioChannelLayoutTag> supportedTags;
               	// CAD Change END
                 AudioChannelSet currentLayout;
@@ -2643,9 +2647,9 @@ private:
                             for (int j = 0; j < static_cast<int> (numElements); ++j)
                             {
                                 const AudioChannelLayoutTag tag = layoutTags[j];
-								// CAD Change START
+                                // CAD Change START
                                 (isInput ? supportedInLayoutTags : supportedOutLayoutTags).add (tag);
-								// CAD Change END
+                                // CAD Change END
 								
                                 if (tag != kAudioChannelLayoutTag_UseChannelDescriptions)
                                 {
@@ -2680,7 +2684,7 @@ private:
                 if (AudioUnitGetProperty (audioUnit, kAudioUnitProperty_SupportedNumChannels, kAudioUnitScope_Global, 0, channelInfos.get(), &propertySize) != noErr)
                     numChannelInfos = 0;
               
-			  	// CAD Change START
+                // CAD Change START
                 // we have an issue where juce takes precedence with the channellayouttags, so if the plugin is a bit dodgy and doesn't fill this out correctly
                 // then juce might not have all the layouts supported
                 for(int nC = 0; nC < numChannelInfos; nC++)
@@ -2696,11 +2700,11 @@ private:
                     
                   }
                 }
-				// CAD Change END
+                // CAD Change END
             }
             else
             {
-				// CAD Change START
+                // CAD Change START
                 numChannelInfos = 0;
 
                 // DO NOT add this code back in without proper investigation
@@ -2708,7 +2712,7 @@ private:
 //                channelInfos.malloc (static_cast<size_t> (numChannelInfos));
 //                channelInfos.get()->inChannels  = -1;
 //                channelInfos.get()->outChannels = -1;
-				// CAD Change END
+                // CAD Change END
             }
         }
     }
