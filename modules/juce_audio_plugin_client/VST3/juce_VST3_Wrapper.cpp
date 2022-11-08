@@ -1010,7 +1010,8 @@ public:
               else
                   info.flags = param.isAutomatable() ? Vst::ParameterInfo::kCanAutomate : 0;
               
-              info.unitId = param.getGroupId();
+              int paramGroupId = param.getGroupId();
+              info.unitId = paramGroupId > Vst::kRootUnitId ? paramGroupId : Vst::kRootUnitId;
             }
           	// CAD Change START
 		  
@@ -1725,19 +1726,28 @@ private:
                         continue;
 
                     auto* juceParam = audioProcessor->getParamForVSTParamID (vstParamID);
-                    auto* parameterGroup = pluginInstance->getParameterTree().getGroupsForParameter (juceParam).getLast();
                   
-                    auto unitID = JuceAudioProcessor::getUnitID (parameterGroup);
-
+                    // CAD Change START
+                    Vst::UnitID unitID = juceParam->getGroupId();
+                  
+                    // if groupId not supported by parameter (-1) run the mind numbingly slow juce code
+                    if(unitID == -1)
+                    {
+                        auto* parameterGroup = pluginInstance->getParameterTree().getGroupsForParameter (juceParam).getLast();
+                    
+                        unitID = JuceAudioProcessor::getUnitID (parameterGroup);
+                    }
+                      
+                  
                     parameters.addParameter (new Param (*this, *juceParam, vstParamID, unitID,
                                                         (vstParamID == audioProcessor->getBypassParamID())));
-					// CAD Change START
+                  
                     // is this a meter?
                     if (((pluginInstance->getParameterCategory(i) & 0xffff0000) >> 16) == 2)
                     {
                       metersParamIDs.add (i);
                     }
-					// CAD Change END
+                    // CAD Change END
                 }
 
                 const auto programParamId = audioProcessor->getProgramParamID();

@@ -1029,7 +1029,7 @@ public:
                     outParameterInfo.clumpID = (UInt32) parameterGroups.indexOf (parameterGroupHierarchy.getLast()) + 1;
                 }
 				// CAD Change START
-                else if(param->getGroupId())
+                else if(param->getGroupId() > 0)
                 {
                   outParameterInfo.flags |= kAudioUnitParameterFlag_HasClump;
                   outParameterInfo.clumpID = param->getGroupId();

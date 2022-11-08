@@ -178,7 +178,7 @@ public:
 
 	// CAD Change START
     virtual bool isWritable() const;
-    virtual uint32_t getGroupId() const;
+    virtual int getGroupId() const;
 	// CAD Change END
 
     enum Category

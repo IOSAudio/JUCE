@@ -1614,7 +1614,7 @@ bool AudioProcessorParameter::isOrientationInverted() const                     
 bool AudioProcessorParameter::isAutomatable() const                              { return true; }
 // CAD Change START
 bool AudioProcessorParameter::isWritable() const                                 { return true; }
-uint32_t AudioProcessorParameter::getGroupId() const                             { return 0; }
+int AudioProcessorParameter::getGroupId() const                                  { return -1; }
 // CAD Change END
 bool AudioProcessorParameter::isMetaParameter() const                            { return false; }
 AudioProcessorParameter::Category AudioProcessorParameter::getCategory() const   { return genericParameter; }
