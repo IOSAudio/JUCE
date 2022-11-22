@@ -1021,21 +1021,25 @@ public:
                 if (param->isMetaParameter())
                     outParameterInfo.flags |= kAudioUnitParameterFlag_IsGlobalMeta;
 
-                auto parameterGroupHierarchy = juceFilter->getParameterTree().getGroupsForParameter (param);
-
-                if (! parameterGroupHierarchy.isEmpty())
-                {
-                    outParameterInfo.flags |= kAudioUnitParameterFlag_HasClump;
-                    outParameterInfo.clumpID = (UInt32) parameterGroups.indexOf (parameterGroupHierarchy.getLast()) + 1;
-                }
-				// CAD Change START
-                else if(param->getGroupId() > 0)
+                // CAD Change START
+                int groupId = param->getGroupId();
+                if(groupId != -1)
                 {
                   outParameterInfo.flags |= kAudioUnitParameterFlag_HasClump;
-                  outParameterInfo.clumpID = param->getGroupId();
+                  outParameterInfo.clumpID = groupId;
                 }
-				// CAD Change END
-				
+                else
+                {
+                // CAD Change END
+                  auto parameterGroupHierarchy = juceFilter->getParameterTree().getGroupsForParameter (param);
+
+                  if (! parameterGroupHierarchy.isEmpty())
+                  {
+                      outParameterInfo.flags |= kAudioUnitParameterFlag_HasClump;
+                      outParameterInfo.clumpID = (UInt32) parameterGroups.indexOf (parameterGroupHierarchy.getLast()) + 1;
+                  }
+                }
+              
                 // Is this a meter?
                 if ((((unsigned int) param->getCategory() & 0xffff0000) >> 16) == 2)
                 {
