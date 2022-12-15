@@ -1616,8 +1616,7 @@ struct VSTPluginInstance final   : public AudioPluginInstance,
     {
         if (index >= 0 && index == getCurrentProgram())
         {
-            if (getNumPrograms() > 0 && newName != getCurrentProgramName())
-                dispatch (Vst2::effSetProgramName, 0, 0, (void*) newName.substring (0, 24).toRawUTF8(), 0.0f);
+            dispatch (Vst2::effSetProgramName, 0, 0, (void*) newName.substring (0, 24).toRawUTF8(), 0.0f);
         }
         else
         {
