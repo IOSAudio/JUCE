@@ -1887,6 +1887,8 @@ public:
                                                           kAudioUnitScope_Global, 0, &propertySize, &writable) == noErr
                                 && propertySize >= sizeof (UInt32) && writable);
             bypassParam.reset (new AUBypassParameter (*this));
+          
+            createEventListener();
         // CAD Change START  
             return true;
         }
