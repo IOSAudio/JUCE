@@ -101,6 +101,7 @@ static std::vector<Vst::ParamID> getAllParamIDs (Vst::IEditController& controlle
 /*  Allows parameter updates to be queued up without blocking,
     and automatically dispatches these updates on the main thread.
 */
+// CAD Change START
 class EditControllerParameterDispatcher  : private Timer
 {
 public:
@@ -116,10 +117,11 @@ public:
         else
             cache.set (index, value);
     }
-
-    void start (Vst::IEditController& controllerIn)
+  
+    void start (Vst::IEditController& controllerIn, std::function<void(Steinberg::Vst::ParamID, float)> callbackIn)
     {
         controller = &controllerIn;
+        callback = callbackIn;
         cache = CachedParamValues { getAllParamIDs (controllerIn) };
         startTimerHz (60);
     }
@@ -128,7 +130,9 @@ public:
     {
         cache.ifSet ([this] (Steinberg::int32 index, float value)
         {
-            controller->setParamNormalized (cache.getParamID (index), value);
+            Steinberg::int32 id = cache.getParamID (index);
+            controller->setParamNormalized (id, value);
+            callback(id, value);
         });
     }
 
@@ -140,7 +144,9 @@ private:
 
     CachedParamValues cache;
     Vst::IEditController* controller = nullptr;
+    std::function<void(Steinberg::Vst::ParamID, float)> callback = nullptr;
 };
+// CAD Change END
 
 //==============================================================================
 std::array<uint32, 4> getNormalisedTUID (const TUID& tuid) noexcept
@@ -2326,7 +2332,13 @@ public:
         //updateMidiMappings();
 		// CAD Change START LOOKAT
 		
-        parameterDispatcher.start (*editController);
+      // CAD Change START
+      parameterDispatcher.start (*editController, [this](Steinberg::Vst::ParamID id, float value)
+      {
+        if(VST3Parameter* p = getParameterForID(id))
+            p->setValueWithoutUpdatingProcessor(value);
+      });
+      // CAD Change END
 
         return true;
     }
