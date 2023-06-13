@@ -23,6 +23,8 @@
   ==============================================================================
 */
 
+#undef AudioUnit
+
 #ifndef DOXYGEN
 
 // Forward declarations to avoid leaking implementation details.

@@ -812,7 +812,7 @@ public:
 
         bool bSendUpdate = false;
         
-        int32 channelIndex = 0;
+        Steinberg::int32 channelIndex = 0;
         contextInfoProvider->getContextInfoValue (channelIndex, Presonus::ContextInfo::kIndex);
         if(trackProperties.trackNumber != channelIndex)
         {
@@ -877,7 +877,7 @@ public:
         
         if(bEverything || FIDStringsEqual(id, Presonus::ContextInfo::kIndex))
         {
-          int32 channelIndex = 0;
+          Steinberg::int32 channelIndex = 0;
           contextInfoProvider->getContextInfoValue (channelIndex, Presonus::ContextInfo::kIndex);
           trackProperties.trackNumber = channelIndex;
         }
