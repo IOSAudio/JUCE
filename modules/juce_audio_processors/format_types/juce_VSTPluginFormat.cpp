@@ -1087,9 +1087,11 @@ struct VSTPluginInstance final   : public AudioPluginInstance,
                 }
             }
 
+			// CAD Change START
             newParameterTree.addChild (std::make_unique<VSTParameter> (*this, paramName, shortParamNames, defaultValue,
                                                                        label, isAutomatable, isDiscrete, numSteps,
-                                                                       isBoolSwitch, parameterValueStrings, valueType, i));
+                                                                       isBoolSwitch, parameterValueStrings, valueType, i));	
+			// CAD change END														   
         }
       
 	  	// CAD Change START
@@ -1301,8 +1303,9 @@ struct VSTPluginInstance final   : public AudioPluginInstance,
         if (vstEffect != nullptr)
         {
             char buffer[512] = { 0 };
-
+			// CAD change START
             if (dispatch (Vst2::effGetEffectName, 0, 0, buffer, 0) != 0)
+			// CAD Change END
             {
                 String productName = String::createStringFromData (buffer, (int) sizeof (buffer));
 
@@ -1616,7 +1619,9 @@ struct VSTPluginInstance final   : public AudioPluginInstance,
     {
         if (index >= 0 && index == getCurrentProgram())
         {
+			// CAD Change START
             dispatch (Vst2::effSetProgramName, 0, 0, (void*) newName.substring (0, 24).toRawUTF8(), 0.0f);
+			// CAD change END
         }
         else
         {
