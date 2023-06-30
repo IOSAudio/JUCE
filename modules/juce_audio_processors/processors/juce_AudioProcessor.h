@@ -22,7 +22,9 @@
 
   ==============================================================================
 */
-
+// CAD Change START LOOKAT
+#define JUCE_DISABLE_AUDIOPROCESSOR_BEGIN_END_GESTURE_CHECKING 1
+// CAD Change END LOOKAT
 namespace juce
 {
 
@@ -46,7 +48,10 @@ class JUCE_API  AudioProcessor
 {
 protected:
     struct BusesProperties;
-
+	// CAD Change START
+    struct BusProperties;
+	// CAD Change END
+	
     //==============================================================================
     /** Constructor.
 
@@ -89,7 +94,13 @@ public:
     //==============================================================================
     /** Destructor. */
     virtual ~AudioProcessor();
-
+  
+  	// CAD Change START
+    //==============================================================================
+    /** Returns the plugin category of this processor. */
+    virtual const String getPluginCategory() const {return "";}
+	// CAD Change END
+	
     //==============================================================================
     /** Returns the name of this processor. */
     virtual const String getName() const = 0;
@@ -555,6 +566,14 @@ public:
     */
     bool addBus (bool isInput);
 
+	// CAD Change START
+    /** Dynamically add an additional bus. No checks, use BusProperties
+     
+       @see canApplyBusCountChange, removeBus
+       */
+    void addBus (bool isInput, BusProperties& busesProps);
+	// CAD Change END
+	
     /** Dynamically remove the latest added bus.
 
         Request the removal of the last bus from the audio processor. If the
@@ -572,6 +591,15 @@ public:
         @see addBus, canRemoveBus
     */
     bool removeBus (bool isInput);
+
+  	// CAD Change START
+    /** Dynamically remove the latest added bus.
+       
+       Request the removal of the last bus from the audio processor. No checks
+       @see addBus, canRemoveBus
+       */
+	void removeBusNoChecks (bool inputBus);
+	// CAD Change END
 
     //==============================================================================
     /** Set the channel layouts of this audio processor.
@@ -844,6 +872,49 @@ public:
 
     /** Returns true if this is a MIDI effect plug-in and does no audio processing. */
     virtual bool isMidiEffect() const                           { return false; }
+	
+	// CAD Change START
+    virtual bool isSynth() const
+#ifdef JucePlugin_IsSynth
+      { return JucePlugin_IsSynth; }
+#else
+      { return false; }
+#endif
+  
+    virtual int32_t getVSTUniqueId() const
+#ifdef JucePlugin_VSTUniqueID
+      { return JucePlugin_VSTUniqueID; }
+#else
+      { return -1; }
+#endif
+
+    struct GroupName
+    {
+        uint32_t      uId;
+        uint32_t      uParentId;
+        juce::String  sName;
+        
+        GroupName(uint32_t uId, uint32_t uParentId, juce::String sName)
+        : uId(uId), uParentId(uParentId), sName(sName)
+        {
+        }
+    };
+
+    virtual GroupName *GetGroupName(uint32_t groupId) const
+    {
+        return nullptr;
+    }
+  
+    virtual GroupName *GetGroupNameForIndex(uint32_t groupIndex) const
+    {
+        return nullptr;
+    }
+
+    virtual uint32_t GetGroupCount() const
+    {
+        return 0;
+    }
+	// CAD Change END
 
     //==============================================================================
     /** This returns a critical section that will automatically be locked while the host
@@ -1052,8 +1123,10 @@ public:
         For most plug-ins it's enough to simply add your parameters in the
         constructor and leave this unimplemented.
     */
-    virtual void refreshParameterList();
-
+	// CAD Change START
+    virtual bool refreshParameterList();
+	// CAD Change END
+	
     /** Returns a flat list of the parameters in the current tree. */
     const Array<AudioProcessorParameter*>& getParameters() const;
 
@@ -1118,7 +1191,10 @@ public:
         @see setCurrentProgramStateInformation
     */
     virtual void setStateInformation (const void* data, int sizeInBytes) = 0;
-
+	// CAD Change START
+    virtual void setStateInformationWithProgramName (const void* data, int sizeInBytes, String sProgramName) { setStateInformation(data, sizeInBytes); };
+	// CAD Change END
+	
     /** The host will call this method if it wants to restore the state of just the processor's
         current program.
 
@@ -1240,9 +1316,19 @@ public:
         AudioProcessor is loaded. */
     struct TrackProperties
     {
+		// CAD Change START
+        typedef enum {tsbFalse, tsbTrue, tsbNull} TriStateBool;
+      	// CAD Change END
+		
         String name;    // The name of the track - this will be empty if the track name is not known
         Colour colour;  // The colour of the track - this will be transparentBlack if the colour is not known
-
+		
+		// CAD Change START
+        int64  trackNumber = -1;
+        int64  pluginLocation = -1;
+        TriStateBool   isSelected = tsbNull;
+        TriStateBool   isFocused = tsbNull;
+		// CAD Change END
         // other properties may be added in the future
     };
 
@@ -1403,6 +1489,8 @@ public:
    #ifndef DOXYGEN
     // These methods are all deprecated in favour of using AudioProcessorParameter
     // and AudioProcessorParameterGroup
+    String virtual getParameterTextForValue (int parameterIndex, float value, int maximumStringLength) { return ""; };
+
     [[deprecated]] virtual int getNumParameters();
     [[deprecated]] virtual const String getParameterName (int parameterIndex);
     [[deprecated]] virtual String getParameterID (int index);
@@ -1417,6 +1505,9 @@ public:
     [[deprecated]] virtual bool isParameterOrientationInverted (int index) const;
     [[deprecated]] virtual void setParameter (int parameterIndex, float newValue);
     [[deprecated]] virtual bool isParameterAutomatable (int parameterIndex) const;
+	// CAD Change START
+	[[deprecated]] virtual bool isParameterWritable (int parameterIndex) const;
+	// CAD Change END
     [[deprecated]] virtual bool isMetaParameter (int parameterIndex) const;
     [[deprecated]] virtual AudioProcessorParameter::Category getParameterCategory (int parameterIndex) const;
     [[deprecated]] void beginParameterChangeGesture (int parameterIndex);
@@ -1435,6 +1526,18 @@ public:
     [[deprecated]] virtual bool isOutputChannelStereoPair (int index) const;
    #endif
 
+  // CAD Change START
+  virtual std::unique_ptr<Array<std::pair<int16_t, int16_t>>> getSupportedChannelInfo(void)
+  {
+    return nullptr;
+  };
+
+  virtual std::unique_ptr<std::vector<uint32_t>> getSupportedChannelTags(bool bIsInput)
+  {
+    return nullptr;
+  };
+  // CAD Change END
+  
 private:
     //==============================================================================
     struct InOutChannelPair

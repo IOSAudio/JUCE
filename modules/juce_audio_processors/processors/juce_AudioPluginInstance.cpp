@@ -151,6 +151,18 @@ bool AudioPluginInstance::isParameterAutomatable (int parameterIndex) const
     return true;
 }
 
+// CAD Change START
+bool AudioPluginInstance::isParameterWritable(int parameterIndex) const
+{
+    assertOnceOnDeprecatedMethodUse();
+
+    if (auto* param = getParameters()[parameterIndex])
+        return param->isWritable();
+
+    return true;
+}
+// CAD Change END
+
 String AudioPluginInstance::getParameterLabel (int parameterIndex) const
 {
     assertOnceOnDeprecatedMethodUse();
@@ -193,6 +205,9 @@ AudioProcessorParameter::Category AudioPluginInstance::getParameterCategory (int
 
 void AudioPluginInstance::assertOnceOnDeprecatedMethodUse() const noexcept
 {
+  // CAD Change START
+  deprecationAssertiontriggered = true;
+  // CAD Change END
     if (! deprecationAssertiontriggered)
     {
         // If you hit this assertion then you are using at least one of the
@@ -221,7 +236,10 @@ String AudioPluginInstance::Parameter::getText (float value, int maximumStringLe
     if (isBoolean())
         return value < 0.5f ? TRANS("Off") : TRANS("On");
 
-    return String (value).substring (0, maximumStringLength);
+	// CAD Change START LOOKAT
+    // TODO need to parametise this
+    return String (value, 2, false).substring (0, maximumStringLength);
+	// CAD Change END LOOKAT
 }
 
 float AudioPluginInstance::Parameter::getValueForText (const String& text) const

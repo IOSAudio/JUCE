@@ -138,8 +138,10 @@ public:
 
         @see setResizable
     */
-    bool isResizable() const noexcept      { return resizableByHost; }
-
+	// CAD Change START
+    virtual bool isResizable() const noexcept      { return resizableByHost; }
+	// CAD Change END
+	
     /** This sets the maximum and minimum sizes for the window.
 
         If the window's current size is outside these limits, it will be resized to
@@ -231,12 +233,16 @@ private:
 
     //==============================================================================
     std::unique_ptr<AudioProcessorEditorListener> resizeListener;
-    bool resizableByHost = false;
     ComponentBoundsConstrainer defaultConstrainer;
     ComponentBoundsConstrainer* constrainer = nullptr;
     AudioProcessorEditorHostContext* hostContext = nullptr;
     Component::SafePointer<Component> splashScreen;
     AffineTransform hostScaleTransform;
+	
+// CAD Change START
+protected:
+    bool resizableByHost = false;
+// CAD Change END
 
     JUCE_DECLARE_NON_COPYABLE (AudioProcessorEditor)
 };

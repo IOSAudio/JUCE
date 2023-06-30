@@ -328,6 +328,12 @@ public:
 
         /** Called when the text editor loses focus. */
         virtual void textEditorFocusLost (TextEditor&) {}
+      
+	  	// CAD Change START
+        /** Called when the text editor loses focus. */
+        virtual void textEditorFocusGained (TextEditor&) {}
+		// CAD Change END
+
     };
 
     /** Registers a listener to be told when things happen to the text.
@@ -353,6 +359,11 @@ public:
     /** You can assign a lambda to this callback object to have it called when the editor loses key focus. */
     std::function<void()> onFocusLost;
 
+	// CAD Change START
+    /** You can assign a lambda to this callback object to have it called when the editor gains key focus. */
+    std::function<void()> onFocusGained;
+	// CAD Change END
+	
     //==============================================================================
     /** Returns the entire contents of the editor. */
     String getText() const;

@@ -323,28 +323,36 @@ public:
     void setBounds (const Rectangle<int>& newBounds, bool) override
     {
         auto r = makeNSRect (newBounds);
-        auto oldViewSize = [view frame].size;
-
-        if (isSharedWindow)
+		// CAD Change START
+        auto oldR = view.frame;
+        if(!NSEqualRects(r, oldR))
         {
-            [view setFrame: r];
-        }
-        else
-        {
-            // Repaint behaviour of setFrame seemed to change in 10.11, and the drawing became synchronous,
-            // causing performance issues. But sending an async update causes flickering in older versions,
-            // hence this version check to use the old behaviour on pre 10.11 machines
-            static bool isPre10_11 = SystemStats::getOperatingSystemType() <= SystemStats::MacOSX_10_10;
+		// CAD Change END
+          auto oldViewSize = [view frame].size;
 
-            [window setFrame: [window frameRectForContentRect: flippedScreenRect (r)]
-                     display: isPre10_11];
-        }
+          if (isSharedWindow)
+          {
+              [view setFrame: r];
+          }
+          else
+          {
+              // Repaint behaviour of setFrame seemed to change in 10.11, and the drawing became synchronous,
+              // causing performance issues. But sending an async update causes flickering in older versions,
+              // hence this version check to use the old behaviour on pre 10.11 machines
+              static bool isPre10_11 = SystemStats::getOperatingSystemType() <= SystemStats::MacOSX_10_10;
 
-        if (oldViewSize.width != r.size.width || oldViewSize.height != r.size.height)
-        {
-            numFramesToSkipMetalRenderer = 5;
-            [view setNeedsDisplay: true];
+              [window setFrame: [window frameRectForContentRect: flippedScreenRect (r)]
+                       display: isPre10_11];
+          }
+
+          if (oldViewSize.width != r.size.width || oldViewSize.height != r.size.height)
+		  {
+			  numFramesToSkipMetalRenderer = 5;
+              [view setNeedsDisplay: true];
+		  }
+		// CAD Change START
         }
+		// CAD Change END
     }
 
     Rectangle<int> getBounds (const bool global) const

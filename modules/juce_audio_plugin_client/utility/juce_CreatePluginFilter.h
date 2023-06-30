@@ -28,11 +28,14 @@
 namespace juce
 {
 
-inline std::unique_ptr<AudioProcessor> createPluginFilterOfType (AudioProcessor::WrapperType type)
+inline std::unique_ptr<AudioProcessor> createPluginFilterOfType (AudioProcessor::WrapperType type, void *pData = nullptr)
 {
     PluginHostType::jucePlugInClientCurrentWrapperType = type;
     AudioProcessor::setTypeOfNextNewPlugin (type);
-    auto pluginInstance = rawToUniquePtr (::createPluginFilter());
+
+    // CAD Change START ARCMERGE7LOOKAT
+    auto pluginInstance = rawToUniquePtr (::createPluginFilter(type, pData));
+    // CAD Change END
     AudioProcessor::setTypeOfNextNewPlugin (AudioProcessor::wrapperType_Undefined);
 
     // your createPluginFilter() method must return an object!

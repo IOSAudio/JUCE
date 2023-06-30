@@ -289,8 +289,9 @@ public:
         vstEffect.numOutputs = maxNumOutChannels;
         vstEffect.initialDelay = processor->getLatencySamples();
         vstEffect.object = this;
-        vstEffect.uniqueID = JucePlugin_VSTUniqueID;
-
+		// CAD Change START
+        vstEffect.uniqueID = processor->getVSTUniqueId();
+		// CAD Change END
        #ifdef JucePlugin_VSTChunkStructureVersion
         vstEffect.version = JucePlugin_VSTChunkStructureVersion;
        #else
@@ -308,12 +309,13 @@ public:
 
         vstEffect.flags |= Vst2::effFlagsProgramChunks;
 
-       #if JucePlugin_IsSynth
-        vstEffect.flags |= Vst2::effFlagsIsSynth;
-       #else
-        if (processor->getTailLengthSeconds() == 0.0)
-            vstEffect.flags |= Vst2::effFlagsNoSoundInStop;
-       #endif
+		// CAD Change START
+        if(processor->isSynth())
+          vstEffect.flags |= Vst2::effFlagsIsSynth;
+        else
+          if (processor->getTailLengthSeconds() == 0.0)
+              vstEffect.flags |= Vst2::effFlagsNoSoundInStop;
+		// CAD Change END
 
        #if JUCE_WINDOWS
         ++numActivePlugins;
@@ -1770,7 +1772,39 @@ private:
 
     pointer_sized_int handleGetPlugInCategory (VstOpCodeArguments)
     {
-        return Vst2::JucePlugin_VSTCategory;
+		// CAD Change START
+	    static std::map<juce::String, pointer_sized_int> catMap =
+        {
+            {"Effect",          Vst2::kPlugCategEffect},
+            {"Synth",           Vst2::kPlugCategSynth},
+            {"Analysis",        Vst2::kPlugCategAnalysis},
+            {"Mastering",       Vst2::kPlugCategMastering},
+            {"Spacial",         Vst2::kPlugCategSpacializer},
+            {"Reverb",          Vst2::kPlugCategRoomFx},
+            {"Surround",        Vst2::kPlugSurroundFx},
+            {"Restoration",     Vst2::kPlugCategRestoration},
+            {"Tone generation", Vst2::kPlugCategGenerator},
+            {"Offline Process", Vst2::kPlugCategOfflineProcess},
+            {"Shell",           Vst2::kPlugCategShell},
+            {"Unknown",         Vst2::kPlugCategUnknown},
+        };
+      
+        String category;
+      
+        if(processor != nullptr)
+          category = processor->getPluginCategory();
+      
+        pointer_sized_int nCat = Vst2::JucePlugin_VSTCategory; // default
+      
+        if(category.length() > 0)
+        {
+          std::map <juce::String, pointer_sized_int>::iterator i = catMap.find(category);
+          if(i != catMap.end())
+            nCat = i->second;
+        }
+      
+        return nCat;
+		// CAD Change END
     }
 
     pointer_sized_int handleSetSpeakerConfiguration (VstOpCodeArguments args)
@@ -1833,7 +1867,10 @@ private:
 
     pointer_sized_int handleGetPlugInName (VstOpCodeArguments args)
     {
-        String (JucePlugin_Name).copyToUTF8 ((char*) args.ptr, 64 + 1);
+		// CAD Change START
+        processor->getName().copyToUTF8 ((char*) args.ptr, 64 + 1);
+        //String (JucePlugin_Name).copyToUTF8 ((char*) args.ptr, 64 + 1);
+		// CAD Change END
         return 1;
     }
 

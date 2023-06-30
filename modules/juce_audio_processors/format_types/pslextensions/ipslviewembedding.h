@@ -10,7 +10,7 @@
 //************************************************************************************************
 /*
 	DISCLAIMER:
-	The PreSonus Plug-In Extensions are host-specific extensions of existing proprietary technologies,
+	PreSonus Plug-In Extensions are host-specific extensions of existing proprietary technologies,
 	provided to the community on an AS IS basis. They are not part of any official 3rd party SDK and
 	PreSonus is not affiliated with the owner of the underlying technology in any way.
 */
@@ -29,12 +29,12 @@ namespace Presonus {
 
 //************************************************************************************************
 // IPlugInViewEmbedding
-/** Support for plug-in view embedding, to be implemented by the VST3 controller class. */
+/** Support for plug-in view embedding, to be implemented by the VST3 controller class.  
+	@ingroup viewExt */
 //************************************************************************************************
 
-class IPlugInViewEmbedding: public Steinberg::FUnknown
+struct IPlugInViewEmbedding: Steinberg::FUnknown
 {
-public:
 	/** Check if view embedding is supported. */
     virtual Steinberg::TBool PLUGIN_API isViewEmbeddingSupported () = 0;
 

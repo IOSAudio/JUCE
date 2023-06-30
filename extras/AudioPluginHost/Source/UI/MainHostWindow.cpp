@@ -116,6 +116,7 @@ public:
                              OwnedArray<PluginDescription>& result,
                              const String& fileOrIdentifier) override
     {
+      
         if (scanInProcess)
         {
             superprocess = nullptr;
@@ -256,15 +257,20 @@ public:
     {
         auto deadMansPedalFile = getAppProperties().getUserSettings()
                                    ->getFile().getSiblingFile ("RecentlyCrashedPluginsList");
-
-        setContentOwned (new CustomPluginListComponent (pluginFormatManager,
-                                                        owner.knownPluginList,
-                                                        deadMansPedalFile,
-                                                        getAppProperties().getUserSettings(),
-                                                        true), true);
+      
+	    // CAD Change START
+        bool bAllowAsync = false; // if true hardly any vst3 plugins validate because juce is creating them and killing them in a thread, unfortunetaly there are still messages for them on the main thread. bang
+		// CAD Change END
+		
+        setContentOwned (new PluginListComponent (pluginFormatManager,
+                                                  owner.knownPluginList,
+                                                  deadMansPedalFile,
+                                                  getAppProperties().getUserSettings(), bAllowAsync), true);
 
         setResizable (true, false);
-        setResizeLimits (300, 400, 800, 1500);
+		// CAD Change START
+        setResizeLimits (300, 400, 10000, 10000);
+		// CAD Change END
         setTopLeftPosition (60, 60);
 
         restoreWindowStateFromString (getAppProperties().getUserSettings()->getValue ("listWindowPos"));
@@ -310,7 +316,9 @@ MainHostWindow::MainHostWindow()
    #else
     setResizable (true, false);
     setResizeLimits (500, 400, 10000, 10000);
-    centreWithSize (800, 600);
+	// CAD Change START
+    centreWithSize (1500, 1500);
+	// CAD Change END
    #endif
 
     knownPluginList.setCustomScanner (std::make_unique<CustomPluginScanner>());

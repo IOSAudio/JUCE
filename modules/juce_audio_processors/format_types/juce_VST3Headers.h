@@ -106,11 +106,17 @@ JUCE_BEGIN_IGNORE_WARNINGS_GCC_LIKE ("-Wdeprecated-copy-dtor",
  #include <pluginterfaces/vst/ivstunits.h>
  #include <pluginterfaces/vst/ivstmidicontrollers.h>
  #include <pluginterfaces/vst/ivstchannelcontextinfo.h>
+ // CAD Change START
+ #include <pluginterfaces/vst/vstpresetkeys.h>
+ // CAD Change END
  #include <public.sdk/source/common/memorystream.h>
  #include <public.sdk/source/vst/vsteditcontroller.h>
  #include <public.sdk/source/vst/vstpresetfile.h>
-
+ 
  #include "pslextensions/ipslviewembedding.h"
+ // CAD Change START
+ #include <public.sdk/source/vst/hosting/hostclasses.h>
+ // CAD Change END
 #else
  // needed for VST_VERSION
  #include <pluginterfaces/vst/vsttypes.h>
@@ -146,6 +152,9 @@ JUCE_BEGIN_IGNORE_WARNINGS_GCC_LIKE ("-Wdeprecated-copy-dtor",
  #include <pluginterfaces/gui/iplugviewcontentscalesupport.h>
  #include <pluginterfaces/vst/ivstmidicontrollers.h>
  #include <pluginterfaces/vst/ivstchannelcontextinfo.h>
+ // CAD Change START
+ #include <pluginterfaces/vst/vstpresetkeys.h>
+ // CAD Change END
  #include <public.sdk/source/common/memorystream.cpp>
  #include <public.sdk/source/common/pluginview.cpp>
  #include <public.sdk/source/vst/vsteditcontroller.cpp>

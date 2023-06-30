@@ -175,7 +175,10 @@
 
 // If you're implementing a plugin, you should supply a body for
 // this function in your own code.
-juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter();
+// CAD Change START
+juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter(juce::AudioProcessor::WrapperType type, void *pData);
+//juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter();
+// CAD Change END
 
 // If you are implementing an ARA enabled plugin, you need to
 // implement this function somewhere in the codebase by returning

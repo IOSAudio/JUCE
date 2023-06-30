@@ -74,7 +74,10 @@ public:
         @see runDispatchLoop
     */
     void stopDispatchLoop();
-
+	// CAD Change START
+    void shutdownApp();
+	// CAD Change END
+	
     /** Returns true if the stopDispatchLoop() method has been called.
     */
     bool hasStopMessageBeenSent() const noexcept        { return quitMessagePosted.get() != 0; }

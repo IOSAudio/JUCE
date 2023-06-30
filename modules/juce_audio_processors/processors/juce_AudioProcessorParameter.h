@@ -227,6 +227,11 @@ public:
     */
     virtual bool isMetaParameter() const;
 
+	// CAD Change START
+    virtual bool isWritable() const;
+    virtual int getGroupId() const;
+	// CAD Change END
+
     enum Category
     {
         genericParameter = (0 << 16) | 0,        /**< If your parameter is not a meter then you should use this category */
@@ -340,13 +345,39 @@ public:
     /** @internal */
     void sendValueChangedMessageToListeners (float newValue);
 
+	// CAD Change START
+    virtual int getOrigParameterIndex(void) const
+    {
+        return origParameterIndex;
+    }
+  
+    void setOrigParameterIndex(int juceParameterIndex)
+    {
+        origParameterIndex = juceParameterIndex;
+    }
+  
+    bool isProgramChange(void)
+    {
+        return programChange;
+    }
+  
+    void setIsProgramChange(bool isProgramChange)
+    {
+        programChange = isProgramChange;
+    }
+	// CAD Change END
+	
 private:
     //==============================================================================
     friend class AudioProcessor;
     friend class LegacyAudioParameter;
     AudioProcessor* processor = nullptr;
     int parameterIndex = -1;
-    int version = 0;
+	int version = 0;
+	// CAD Change START
+    int origParameterIndex = -1;
+    bool programChange = false;
+	// CAD Change END
     CriticalSection listenerLock;
     Array<Listener*> listeners;
     mutable StringArray valueStrings;

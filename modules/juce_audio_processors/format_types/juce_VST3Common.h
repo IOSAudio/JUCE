@@ -183,6 +183,11 @@ inline void toString128 (Steinberg::Vst::String128 result, const juce::String& s
  static const Steinberg::FIDString defaultVST3WindowType = Steinberg::kPlatformTypeX11EmbedWindowID;
 #endif
 
+// CAD Change START
+#ifndef STDMETHODCALLTYPE
+  #define STDMETHODCALLTYPE
+#endif
+// CAD Change END
 
 //==============================================================================
 static inline Steinberg::Vst::SpeakerArrangement getArrangementForBus (Steinberg::Vst::IAudioProcessor* processor,
@@ -1661,6 +1666,71 @@ private:
 
     Listener& listener;
     std::atomic<int32> flags { 0 };
+};
+
+class VST3MemoryStream : public Steinberg::MemoryStream, public Steinberg::Vst::IStreamAttributes
+{
+public:
+  VST3MemoryStream () : MemoryStream()
+  {
+    Steinberg::UString128 projectString (Steinberg::Vst::StateType::kProject);
+    hostAttributes.setString(Steinberg::Vst::PresetAttributes::kStateType, projectString);
+  };
+  
+  VST3MemoryStream (void* memory, Steinberg::TSize memorySize) : MemoryStream(memory, memorySize) {};
+  virtual ~VST3MemoryStream () {};
+
+  Steinberg::uint32 PLUGIN_API addRef () SMTG_OVERRIDE
+  {
+    return ::Steinberg::FUnknownPrivate::atomicAdd (__funknownRefCount, 1);
+  }
+  
+  Steinberg::uint32 PLUGIN_API release () SMTG_OVERRIDE
+  {
+    if (::Steinberg::FUnknownPrivate::atomicAdd (__funknownRefCount, -1) == 0)
+    {
+      delete this;
+      return 0;
+    }
+    return __funknownRefCount;
+  }
+
+  Steinberg::tresult STDMETHODCALLTYPE queryInterface (const char* iid, void** obj) SMTG_OVERRIDE
+  {
+    if(Steinberg::kNoInterface == Steinberg::MemoryStream::queryInterface(iid, obj))
+    {
+      if (::Steinberg::FUnknownPrivate::iidEqual (iid, Steinberg::Vst::IStreamAttributes::iid))
+      {
+        addRef ();
+        *obj = static_cast<Steinberg::Vst::IStreamAttributes *>(this);
+        return ::Steinberg::kResultOk;
+      }
+    }
+
+    return Steinberg::kNoInterface;
+  }
+  
+  virtual Steinberg::tresult PLUGIN_API getFileName (Steinberg::Vst::String128 name) SMTG_OVERRIDE
+  {
+    name = presetName;
+
+    return Steinberg::kResultTrue;
+  }
+  
+  virtual Steinberg::Vst::IAttributeList* PLUGIN_API getAttributes () SMTG_OVERRIDE
+  {
+    return &hostAttributes;
+  }
+
+  void setProgramName(String name)
+  {
+    toString128(presetName, name);
+    hostAttributes.setString(Steinberg::Vst::PresetAttributes::kFilePathStringType, presetName);
+    hostAttributes.setString(Steinberg::Vst::PresetAttributes::kName, presetName);
+  }
+  
+  Steinberg::Vst::HostAttributeList hostAttributes;
+  Steinberg::Vst::String128         presetName;
 };
 
 JUCE_END_NO_SANITIZE

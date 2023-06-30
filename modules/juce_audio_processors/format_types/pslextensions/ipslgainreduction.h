@@ -10,7 +10,7 @@
 //************************************************************************************************
 /*
 	DISCLAIMER:
-	The PreSonus Plug-In Extensions are host-specific extensions of existing proprietary technologies,
+	PreSonus Plug-In Extensions are host-specific extensions of existing proprietary technologies,
 	provided to the community on an AS IS basis. They are not part of any official 3rd party SDK and
 	PreSonus is not affiliated with the owner of the underlying technology in any way.
 */
@@ -28,7 +28,8 @@ namespace Presonus {
 // IGainReductionInfo
 /**	Interface to report gain reduction imposed to the audio signal by the plug-in to the
 	host for display in the UI. Implemented by the VST3 edit controller class. 
-*/
+
+	@ingroup editController */
 //************************************************************************************************
 
 struct IGainReductionInfo: Steinberg::FUnknown

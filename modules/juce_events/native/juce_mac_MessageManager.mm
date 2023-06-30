@@ -19,7 +19,6 @@
 
   ==============================================================================
 */
-
 namespace juce
 {
 
@@ -367,6 +366,26 @@ static void shutdownNSApp()
     [NSApp stop: nil];
     [NSEvent startPeriodicEventsAfterDelay: 0  withPeriod: 0.1];
 }
+
+// CAD Change START
+void MessageManager::shutdownApp()
+{
+    if (isThisTheMessageThread())
+    {
+        shutdownNSApp();
+    }
+    else
+    {
+        struct QuitCallback  : public CallbackMessage
+        {
+            QuitCallback() {}
+            void messageCallback() override    { MessageManager::getInstance()->shutdownApp(); }
+        };
+
+        (new QuitCallback())->post();
+    }
+}
+// CAD Change END
 
 void MessageManager::stopDispatchLoop()
 {

@@ -359,8 +359,14 @@ struct AudioUnitHelpers
         }
 
         auto layout = processor.getBusesLayout();
-        auto maxNumChanToCheckFor = 9;
-
+      
+	  	// CAD Change START
+        // ARCCHANNELS AUChannelinfos can be larger than 8, with this set to 9 any plugin that has more than 8 channels gets marked as "-1"
+        // There are plugins with more than 9 channels
+        //auto maxNumChanToCheckFor = 9;
+        auto maxNumChanToCheckFor = 65;
+		// CAD Change END
+		
         auto defaultInputs  = processor.getChannelCountOfBus (true,  0);
         auto defaultOutputs = processor.getChannelCountOfBus (false, 0);
 
@@ -375,21 +381,27 @@ struct AudioUnitHelpers
         };
 
         SortedSet<Channels> supportedChannels;
+      
+	  	// CAD Change START
+        int mainBusBaseChannel = 1;
+		// CAD Change END
 
         // add the current configuration
         if (defaultInputs != 0 || defaultOutputs != 0)
             supportedChannels.add ({ static_cast<SInt16> (defaultInputs),
                                      static_cast<SInt16> (defaultOutputs) });
-
-        for (auto inChanNum = hasMainInputBus ? 1 : 0; inChanNum <= (hasMainInputBus ? maxNumChanToCheckFor : 0); ++inChanNum)
+		// CAD Change START
+        for (auto inChanNum = hasMainInputBus ? mainBusBaseChannel : 0; inChanNum <= (hasMainInputBus ? maxNumChanToCheckFor : 0); ++inChanNum)
+		// CAD Change END
         {
             auto inLayout = layout;
 
             if (auto* inBus = processor.getBus (true, 0))
                 if (! isNumberOfChannelsSupported (inBus, inChanNum, inLayout))
                     continue;
-
-            for (auto outChanNum = hasMainOutputBus ? 1 : 0; outChanNum <= (hasMainOutputBus ? maxNumChanToCheckFor : 0); ++outChanNum)
+			// CAD Change START
+            for (auto outChanNum = hasMainOutputBus ? mainBusBaseChannel : 0; outChanNum <= (hasMainOutputBus ? maxNumChanToCheckFor : 0); ++outChanNum)
+			// CAD Change END
             {
                 auto outLayout = inLayout;
 
@@ -415,8 +427,10 @@ struct AudioUnitHelpers
 
         auto hasUnsupportedInput = ! hasMainInputBus, hasUnsupportedOutput = ! hasMainOutputBus;
 
-        for (auto inChanNum = hasMainInputBus ? 1 : 0; inChanNum <= (hasMainInputBus ? maxNumChanToCheckFor : 0); ++inChanNum)
-        {
+        // CAD Change START
+		for (auto inChanNum = hasMainInputBus ? mainBusBaseChannel : 0; inChanNum <= (hasMainInputBus ? maxNumChanToCheckFor : 0); ++inChanNum)
+        // CAD Change END
+		{
             Channels channelConfiguration { static_cast<SInt16> (inChanNum),
                                             static_cast<SInt16> (hasInOutMismatch ? defaultOutputs : inChanNum) };
 
@@ -427,8 +441,10 @@ struct AudioUnitHelpers
             }
         }
 
-        for (auto outChanNum = hasMainOutputBus ? 1 : 0; outChanNum <= (hasMainOutputBus ? maxNumChanToCheckFor : 0); ++outChanNum)
-        {
+        // CAD Change START
+		for (auto outChanNum = hasMainOutputBus ? mainBusBaseChannel : 0; outChanNum <= (hasMainOutputBus ? maxNumChanToCheckFor : 0); ++outChanNum)
+        // CAD Change END
+		{
             Channels channelConfiguration { static_cast<SInt16> (hasInOutMismatch ? defaultInputs : outChanNum),
                                             static_cast<SInt16> (outChanNum) };
 
@@ -439,27 +455,70 @@ struct AudioUnitHelpers
             }
         }
 
+		// CAD Change START
+        // lets check we have sequential sets of ins and outs
+        // this is needed for dynamic bus plugins as usually a single channel map will mean
+        // maximum channels across all buses
+        // use the existing juce set data
+        int maxNumInputs = 0;
+        int maxNumOutputs = 0;
+      	// CAD Change END
         for (const auto& supported : supportedChannels)
         {
-            AUChannelInfo info;
-
-            // see here: https://developer.apple.com/library/mac/documentation/MusicAudio/Conceptual/AudioUnitProgrammingGuide/TheAudioUnit/TheAudioUnit.html
-            info.inChannels  = static_cast<SInt16> (hasMainInputBus  ? (hasUnsupportedInput  ? supported.ins  : (hasInOutMismatch && (! hasUnsupportedOutput) ? -2 : -1)) : 0);
-            info.outChannels = static_cast<SInt16> (hasMainOutputBus ? (hasUnsupportedOutput ? supported.outs : (hasInOutMismatch && (! hasUnsupportedInput)  ? -2 : -1)) : 0);
-
-            if (info.inChannels == -2 && info.outChannels == -2)
-                info.inChannels = -1;
-
-            int j;
-            for (j = 0; j < channelInfo.size(); ++j)
-                if (info.inChannels == channelInfo.getReference (j).inChannels
-                      && info.outChannels == channelInfo.getReference (j).outChannels)
-                    break;
-
-            if (j >= channelInfo.size())
-                channelInfo.add (info);
+		// CAD Change START
+          int numInputs  = supported.ins;
+          int numOutputs = supported.outs;
+          
+          maxNumInputs  = std::max(numInputs, maxNumInputs);
+          maxNumOutputs = std::max(numOutputs, maxNumOutputs);
         }
+      
+        bool bValidSeq = true;
+        int nIndex = 0;
+        for(int input = hasMainInputBus ? mainBusBaseChannel : 0; bValidSeq and input <= maxNumInputs; input++)
+        {
+          for(int output = hasMainOutputBus ? mainBusBaseChannel : 0; bValidSeq && output <= maxNumOutputs; output++)
+          {
+            Channels channelConfiguration { static_cast<SInt16> (input),
+                                            static_cast<SInt16> (output) };
+            bValidSeq = supportedChannels.contains(channelConfiguration);
+          }
+        }
+      
+        if(bValidSeq)
+        {
+		// CAD Change END
+          AUChannelInfo info;
+		// CAD Change START
+          info.inChannels  = (SInt16) -maxNumInputs;
+          info.outChannels = (SInt16) -maxNumOutputs;
+          channelInfo.add (info);
+        }
+        else
+        {
+            for (const auto& supported : supportedChannels)
+            {
+                AUChannelInfo info;
+		// CAD Change END
+                // see here: https://developer.apple.com/library/mac/documentation/MusicAudio/Conceptual/AudioUnitProgrammingGuide/TheAudioUnit/TheAudioUnit.html
+                info.inChannels  = static_cast<SInt16> (hasMainInputBus  ? (hasUnsupportedInput  ? supported.ins  : (hasInOutMismatch && (! hasUnsupportedOutput) ? -2 : -1)) : 0);
+                info.outChannels = static_cast<SInt16> (hasMainOutputBus ? (hasUnsupportedOutput ? supported.outs : (hasInOutMismatch && (! hasUnsupportedInput)  ? -2 : -1)) : 0);
 
+                if (info.inChannels == -2 && info.outChannels == -2)
+                    info.inChannels = -1;
+
+                int j;
+                for (j = 0; j < channelInfo.size(); ++j)
+                    if (info.inChannels == channelInfo.getReference (j).inChannels
+                          && info.outChannels == channelInfo.getReference (j).outChannels)
+                        break;
+
+                if (j >= channelInfo.size())
+                    channelInfo.add (info);
+          }
+		// CAD Change START
+        }
+		// CAD Change END
         return channelInfo;
     }
 

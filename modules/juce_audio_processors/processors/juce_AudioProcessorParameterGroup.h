@@ -225,7 +225,11 @@ public:
         addChild (std::move (firstChild));
         addChild (std::forward<Args> (remainingChildren)...);
     }
-
+	
+	// CAD Change START
+    bool differentTo(const AudioProcessorParameterGroup &other) const;
+  	// CAD Change END
+	
    #ifndef DOXYGEN
     [[deprecated ("This class now has a move operator, so if you're trying to move them around, you "
                  "should use that, or if you really need to swap two groups, just call std::swap. "

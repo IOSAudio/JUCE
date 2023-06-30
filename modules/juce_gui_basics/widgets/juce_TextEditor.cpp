@@ -1,4 +1,4 @@
-/*
+  /*
   ==============================================================================
 
    This file is part of the JUCE library.
@@ -915,11 +915,13 @@ private:
 //==============================================================================
 namespace TextEditorDefs
 {
-    const int textChangeMessageId = 0x10003001;
-    const int returnKeyMessageId  = 0x10003002;
-    const int escapeKeyMessageId  = 0x10003003;
-    const int focusLossMessageId  = 0x10003004;
-
+    const int textChangeMessageId   = 0x10003001;
+    const int returnKeyMessageId    = 0x10003002;
+    const int escapeKeyMessageId    = 0x10003003;
+    const int focusLossMessageId    = 0x10003004;
+	// CAD Change START
+    const int focusGainedMessageId  = 0x10003005;
+	// CAD Change END
     const int maxActionsPerTransaction = 100;
 
     static int getCharacterCategory (juce_wchar character) noexcept
@@ -2226,6 +2228,10 @@ void TextEditor::focusGained (FocusChangeType cause)
 
     repaint();
     updateCaretPosition();
+  
+  	// CAD Change START
+    postCommandMessage (TextEditorDefs::focusGainedMessageId);
+	// CAD Change END
 }
 
 void TextEditor::focusLost (FocusChangeType)
@@ -2296,6 +2302,17 @@ void TextEditor::handleCommandMessage (const int commandId)
 
         break;
 
+    // CAD Change START
+	case TextEditorDefs::focusGainedMessageId:
+        updateValueFromText();
+        listeners.callChecked (checker, [this] (Listener& l) { l.textEditorFocusGained (*this); });
+        
+        if (! checker.shouldBailOut() && onFocusGained != nullptr)
+          onFocusGained();
+        
+        break;
+	// CAD Change END
+	
     default:
         jassertfalse;
         break;

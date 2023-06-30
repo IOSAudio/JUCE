@@ -129,7 +129,11 @@ public:
     /** True if the plug-in is part of a multi-type container, e.g. a VST Shell. */
     bool hasSharedContainer = false;
 
-    /** True if the plug-in is ARA enabled and can supply a valid ARAFactoryWrapper. */
+	// CAD Change START
+    int8 tuid[16] = {0};
+  	// CAD Change END
+	
+	/** True if the plug-in is ARA enabled and can supply a valid ARAFactoryWrapper. */
     bool hasARAExtension = false;
 
     /** Returns true if the two descriptions refer to the same plug-in.
