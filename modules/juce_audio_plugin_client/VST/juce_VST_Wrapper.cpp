@@ -1199,7 +1199,8 @@ public:
                     const ScopedValueSetter<bool> resizingChildSetter (resizingChild, true);
 
                     pluginEditor->setScaleFactor (scale);
-                    pluginEditor->setBounds (prevEditorBounds.withPosition (0, 0));
+										if (pluginEditor->shouldResizeAfterScale())
+	                    pluginEditor->setBounds (prevEditorBounds.withPosition (0, 0));
                 }
 
                 lastBounds = getSizeToContainChild();

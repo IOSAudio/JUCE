@@ -116,6 +116,10 @@ public:
     */
     virtual void setScaleFactor (float newScale);
 
+		// CAD CHANGE START
+		virtual bool shouldResizeAfterScale(void) { return true; };
+		// CAD CHANGE END
+
     //==============================================================================
     /** Sets whether the editor is resizable by the host and/or user.
 
