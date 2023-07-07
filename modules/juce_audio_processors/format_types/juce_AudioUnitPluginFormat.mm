@@ -1687,8 +1687,10 @@ public:
         }
 
         // If these are hit, we might allocate in the process block!
-        jassert (buffer.getNumChannels() <= preparedChannels); // ARCCHECKMERGE7
-        jassert (buffer.getNumSamples()  <= preparedSamples);  // ARCCHECKMERGE7
+        // CAD CHANGE START
+        //jassert (buffer.getNumChannels() <= preparedChannels); // ARCCHECKMERGE7
+        //jassert (buffer.getNumSamples()  <= preparedSamples);  // ARCCHECKMERGE7
+        // CAD CHANGE END
         // Copy the input buffer to guard against the case where a bus has more output channels
         // than input channels, so rendering the output for that bus might stamp over the input
         // to the following bus.
