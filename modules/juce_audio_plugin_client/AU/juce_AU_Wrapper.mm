@@ -425,15 +425,24 @@ public:
                     return noErr;
 
                #if JucePlugin_ProducesMidiOutput || JucePlugin_IsMidiEffect
+                // CAD CHANGE START
                 case kAudioUnitProperty_MIDIOutputCallbackInfo:
-                    outDataSize = sizeof (CFArrayRef);
+                    if(juceFilter->producesMidi())
+                        outDataSize = sizeof (CFArrayRef);
+                    else
+                        outDataSize = 0;
                     outWritable = false;
                     return noErr;
 
                 case kAudioUnitProperty_MIDIOutputCallback:
-                    outDataSize = sizeof (AUMIDIOutputCallbackStruct);
+                    if(juceFilter->producesMidi())
+                        outDataSize = sizeof (AUMIDIOutputCallbackStruct);
+                    else
+                        outDataSize = 0;
+
                     outWritable = true;
                     return noErr;
+                // CAD CHANGE END
                #endif
 
                 case kAudioUnitProperty_ParameterStringFromValue:

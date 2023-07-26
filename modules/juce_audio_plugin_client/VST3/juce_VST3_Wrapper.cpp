@@ -3350,8 +3350,10 @@ public:
            #endif
 
            #if JucePlugin_ProducesMidiOutput
+            // CAD CHANGE START
             if (dir == Vst::kOutput)
-                return 1;
+              return pluginInstance->producesMidi();
+            // CAD CHANGE END
            #endif
         }
 

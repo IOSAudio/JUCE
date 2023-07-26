@@ -1925,7 +1925,9 @@ private:
          || matches ("sendVstMidiEvents"))
         {
            #if JucePlugin_ProducesMidiOutput || JucePlugin_IsMidiEffect
-            return 1;
+          // CAD CHANGE START
+            return processor->producesMidi();
+          // CAD CHANGE END
            #else
             return -1;
            #endif
