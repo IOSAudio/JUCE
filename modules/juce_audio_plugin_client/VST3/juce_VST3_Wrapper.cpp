@@ -4502,7 +4502,7 @@ using namespace juce;
 #ifdef CAD_CODE
 // CAD Change START
 
-extern char     pgCommsMem[1024+8];
+extern char     pgCommsMem[1024 + 4 + 64 + 64 + 16 + 1];
 extern int      *pgChildID;
 extern int      *pgCategory;
 extern const char     *sgOrigVst;
