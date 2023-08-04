@@ -24,6 +24,8 @@
 */
 // CAD Change START
 #pragma clang diagnostic ignored "-Wnon-virtual-dtor"
+
+#include "CADCommsData.h"
 // CAD Change END
 
 #include <juce_core/system/juce_TargetPlatform.h>
@@ -4502,13 +4504,9 @@ using namespace juce;
 #ifdef CAD_CODE
 // CAD Change START
 
-extern char     pgCommsMem[1024+8];
-extern int      *pgChildID;
-extern int      *pgCategory;
-extern const char     *sgOrigVst;
-extern const char     *sgName;
-extern char     *pgCategoryName;
-extern uint8_t  *pgGuid;
+extern char     pgCommsMem[sizeof(CADCommsData)];
+
+CADCommsData *pCommsData = (CADCommsData*)pgCommsMem;
 
 
 //==============================================================================
@@ -4545,21 +4543,21 @@ JUCE_EXPORTED_FUNCTION IPluginFactory* PLUGIN_API GetPluginFactory()
   FUID        ccFuid = JuceVST3EditController::iid;
   const char8 *pszSubCategories = JucePlugin_Vst3Category;
   std::string sName;
-
-  bool bFoundMarker = 0 == memcmp((void *) pgCommsMem, (void *) "CADVSTMark", 10);
-
+  
+  //bool bFoundMarker = 0 == memcmp((void *) pgCommsMem, (void *) "CADVSTMarker", 12);
+  bool bFoundMarker = pCommsData->IsEmpty();
   if(!bFoundMarker)
   {
-    sName = sgName;
+    sName = pCommsData->sName;
     sName += " (PluginController VST3)";
     pszName = (const char8 *)sName.c_str();
-    pszSubCategories = pgCategoryName;
+    pszSubCategories = pCommsData->sCategoryName;
 
     TUID aeTuid;
     TUID ccTuid;
 
-    memcpy(aeTuid, pgGuid, 16);
-    memcpy(ccTuid, pgGuid, 16);
+    memcpy(aeTuid, pCommsData->guid, 16);
+    memcpy(ccTuid, pCommsData->guid, 16);
 
     uint8_t aeMangle[8] = {'C', 'a', 'd', 'L', 'A', 'E', 'C', 'L'};
     uint8_t ccMangle[8] = {'C', 'a', 'd', 'L', 'C', 'C', 'C', 'L'};
@@ -4579,7 +4577,7 @@ JUCE_EXPORTED_FUNCTION IPluginFactory* PLUGIN_API GetPluginFactory()
     *pCcIid = FUID::fromTUID(ccTuid);
   }
   else
-    memcpy((void *)pgGuid, aeFuid, 16);
+    memcpy((void *)pCommsData->guid, aeFuid, 16);
 
 
   if (globalFactory == nullptr)
