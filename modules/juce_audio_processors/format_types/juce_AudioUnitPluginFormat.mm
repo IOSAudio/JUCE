@@ -3048,7 +3048,7 @@ public:
     void paint (Graphics& g) override
     {
 	  // CAD Change START
-      g.fillAll (Colours::black);
+      g.fillAll (Colours::white);
 	  // CAD Change END
     }
 

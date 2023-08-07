@@ -926,7 +926,7 @@ AudioProcessorEditor* AudioProcessor::createEditorIfNeeded()
     if (ed != nullptr)
     {
         // you must give your editor comp a size before returning it..
-        jassert (ed->getWidth() > 0 && ed->getHeight() > 0);
+        // CAD CHANGE jassert (ed->getWidth() > 0 && ed->getHeight() > 0);
         activeEditor = ed;
     }
 
