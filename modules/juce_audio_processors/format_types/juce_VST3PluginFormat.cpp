@@ -2216,6 +2216,8 @@ public:
               paramID (parameterID),
               automatable (parameterIsAutomatable)
         {
+          if(vstParameterIndex < 10)
+            printf("!!!! Create Parameter [%u] at %p\n", vstParameterIndex, this);
         }
 
         float getValue() const override
@@ -2411,7 +2413,8 @@ public:
 
         auto configureParameters = [this]
         {
-            refreshParameterList(); // MERGE7 
+            refreshParameterList(); // MERGE7
+            synchroniseStates();
             syncProgramNames();
         };
 
@@ -2424,7 +2427,7 @@ public:
             configureParameters();
 
 		// CAD Change START LOOKAT
-        //updateMidiMappings();
+       updateMidiMappings();
 		// CAD Change START LOOKAT
 		
       // CAD Change START
