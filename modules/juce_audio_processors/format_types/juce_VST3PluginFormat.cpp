@@ -3103,6 +3103,9 @@ public:
             editController->setState (controllerStream);
           }
         }
+        
+        resetParameters();
+        updateMidiMappings();
       }
     }
 	// CAD Change END
