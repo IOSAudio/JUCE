@@ -182,10 +182,13 @@ AudioPluginFormat* AudioPluginFormatManager::findFormatForDescription (const Plu
     errorMessage = {};
 
     for (auto* format : formats)
-        if (format->getName() == description.pluginFormatName
-              && format->fileMightContainThisPluginType (description.fileOrIdentifier))
-            return format;
-
+    {
+      if (format->getName() == description.pluginFormatName)
+      {
+        if(format->fileMightContainThisPluginType (description.fileOrIdentifier))
+          return format;
+      }
+    }
     errorMessage = NEEDS_TRANS ("No compatible plug-in format exists for this plug-in");
 
     return {};
