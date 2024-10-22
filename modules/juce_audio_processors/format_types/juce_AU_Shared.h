@@ -474,7 +474,6 @@ struct AudioUnitHelpers
         }
       
         bool bValidSeq = true;
-        int nIndex = 0;
         for(int input = hasMainInputBus ? mainBusBaseChannel : 0; bValidSeq and input <= maxNumInputs; input++)
         {
           for(int output = hasMainOutputBus ? mainBusBaseChannel : 0; bValidSeq && output <= maxNumOutputs; output++)

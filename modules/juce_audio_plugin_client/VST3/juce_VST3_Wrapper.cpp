@@ -24,6 +24,7 @@
 */
 // CAD Change START
 #pragma clang diagnostic ignored "-Wnon-virtual-dtor"
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
 
 #include "CADCommsData.h"
 // CAD Change END

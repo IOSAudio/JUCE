@@ -23,6 +23,8 @@
   ==============================================================================
 */
 
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+
 #include <juce_core/system/juce_TargetPlatform.h>
 #include <juce_core/system/juce_CompilerWarnings.h>
 #include "../utility/juce_CheckSettingMacros.h"

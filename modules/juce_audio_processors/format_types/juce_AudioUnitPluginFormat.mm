@@ -716,11 +716,11 @@ public:
               numSteps (numParameterSteps),
               valuesHaveStrings (parameterValuesHaveStrings),
               isSwitch (isBoolean),
+        // CAD Change START
+              isMeta(isMetaParameter),
+        // CAD Change END
               valueLabel (label),
-              defaultValue (normaliseParamValue (defaultParameterValue)),
-			  // CAD Change START
-              isMeta(isMetaParameter)
-			  // CAD Change END
+              defaultValue (normaliseParamValue (defaultParameterValue))
         {
 			// CAD Change START
             // Store original parameter index in base
