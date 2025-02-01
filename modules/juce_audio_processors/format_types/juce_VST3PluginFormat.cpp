@@ -2431,11 +2431,13 @@ public:
 		// CAD Change START LOOKAT
 		
       // CAD Change START
-      parameterDispatcher.start (*editController, [this](Steinberg::Vst::ParamID id, float value)
-      {
-        if(VST3Parameter* p = getParameterForID(id))
-            p->setValueWithoutUpdatingProcessor(value);
-      });
+      // This was for Korg plugins but is messing up other things now.
+      // I think this issue was fixed in V7.
+      //      parameterDispatcher.start (*editController, [this](Steinberg::Vst::ParamID id, float value)
+      //      {
+      //        if(VST3Parameter* p = getParameterForID(id))
+      //            p->setValueWithoutUpdatingProcessor(value);
+      //      });
       // CAD Change END
 
         return true;
