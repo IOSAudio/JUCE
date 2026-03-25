@@ -803,7 +803,7 @@ public:
           // Parameter::getAllValueStrings() doesn't work for audio units that implement kAudioUnitProperty_ParameterValueStrings and not kAudioUnitProperty_ParameterStringFromValue
           if(discrete)
           {
-            CFArrayRef cfaNamedParams;
+            CFArrayRef cfaNamedParams = nullptr;
     
             UInt32   uPropertySize = sizeof(cfaNamedParams);
             OSStatus err = AudioUnitGetProperty (pluginInstance.audioUnit, kAudioUnitProperty_ParameterValueStrings, kAudioUnitScope_Global, paramID, &cfaNamedParams, &uPropertySize);
